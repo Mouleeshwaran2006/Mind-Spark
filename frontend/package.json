@@ -1,0 +1,23 @@
+{
+    "name": "mindspark-frontend",
+    "version": "1.0.0",
+    "description": "Mind Spark Smart Parking Marketplace – Frontend",
+    "private": true,
+    "scripts": {
+        "dev": "next dev",
+        "build": "next build",
+        "start": "next start",
+        "lint": "next lint"
+    },
+    "dependencies": {
+        "next": "14.2.3",
+        "react": "^18.3.1",
+        "react-dom": "^18.3.1",
+        "axios": "^1.6.8",
+        "leaflet": "^1.9.4",
+        "react-leaflet": "^4.2.1",
+        "chart.js": "^4.4.3",
+        "react-chartjs-2": "^5.2.0",
+        "lucide-react": "^0.378.0"
+    }
+}
