@@ -1,6 +1,6 @@
 const express = require('express');
 const { body } = require('express-validator');
-const { register, login, getMe, switchRole, addRole } = require('../controllers/authController');
+const { register, login, getMe, switchRole, addRole, forgotPassword, resetPassword } = require('../controllers/authController');
 const { protect } = require('../middleware/auth');
 
 const router = express.Router();
@@ -22,5 +22,8 @@ router.post('/login', loginValidation, login);
 router.get('/me', protect, getMe);
 router.put('/switch-role', protect, switchRole);
 router.put('/add-role', protect, addRole);
+
+router.post('/forgot-password', forgotPassword);
+router.put('/reset-password', resetPassword);
 
 module.exports = router;

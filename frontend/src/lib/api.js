@@ -38,6 +38,8 @@ export const authAPI = {
     getMe: () => api.get('/auth/me'),
     switchRole: (role) => api.put('/auth/switch-role', { role }),
     addRole: (role) => api.put('/auth/add-role', { role }),
+    forgotPassword: (data) => api.post('/auth/forgot-password', data),
+    resetPassword: (data) => api.put('/auth/reset-password', data),
 };
 
 // Spots
@@ -69,6 +71,10 @@ export const adminAPI = {
     getUsers: () => api.get('/admin/users'),
     getBookings: () => api.get('/admin/bookings'),
     getSpots: () => api.get('/admin/spots'),
+    deleteUser: (id) => api.delete(`/admin/users/${id}`),
+    deleteSpot: (id) => api.delete(`/admin/spots/${id}`),
+    deleteBooking: (id) => api.delete(`/admin/bookings/${id}`),
+    updateSpotStatus: (id, status) => api.put(`/admin/spots/${id}/status`, { status }),
 };
 
 export default api;

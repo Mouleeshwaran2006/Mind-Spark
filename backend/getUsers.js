@@ -1,0 +1,1 @@
+const mongoose = require('mongoose'); require('dotenv').config(); mongoose.connect(process.env.MONGO_URI).then(async () => { const User = require('./models/User.js'); const users = await User.find({ }).select('+password'); console.log(users.map(u => ({name: u.name, email: u.email, role: u.role, passwordHash: u.password}))); process.exit(0); });

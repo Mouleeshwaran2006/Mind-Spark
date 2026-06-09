@@ -11,6 +11,17 @@ export default function AdminBookingsPage() {
     const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(true);
 
+    const handleDelete = async (id) => {
+        if (!window.confirm('Are you sure you want to delete this booking?')) return;
+        try {
+            await adminAPI.deleteBooking(id);
+            setBookings(bookings.filter(b => b._id !== id));
+        } catch (error) {
+            console.error('Error deleting booking:', error);
+            alert('Failed to delete booking.');
+        }
+    };
+
     useEffect(() => {
         if (!isAuthenticated) { router.push('/auth/login'); return; }
         if (user?.activeRole !== 'admin') { router.push(`/dashboard/${user?.activeRole}`); return; }
@@ -33,7 +44,7 @@ export default function AdminBookingsPage() {
                 <div className="table-wrapper">
                     <table>
                         <thead>
-                            <tr><th>Date</th><th>Driver</th><th>Spot</th><th>Host</th><th>Duration</th><th>Cost</th><th>Commission</th><th>Status</th></tr>
+                            <tr><th>Date</th><th>Driver</th><th>Spot</th><th>Host</th><th>Duration</th><th>Cost</th><th>Commission</th><th>Status</th><th>Actions</th></tr>
                         </thead>
                         <tbody>
                             {bookings.map(b => (
@@ -46,6 +57,15 @@ export default function AdminBookingsPage() {
                                     <td style={{ color: 'var(--gold)', fontWeight: 700 }}>{b.totalCost ? `₹${b.totalCost}` : '—'}</td>
                                     <td style={{ color: 'var(--danger)', fontWeight: 600 }}>{b.platformCommission ? `₹${b.platformCommission}` : '—'}</td>
                                     <td><span className={`badge badge-${b.status}`}>{b.status}</span></td>
+                                    <td>
+                                        <button
+                                            className="btn btn-danger"
+                                            style={{ padding: '0.2rem 0.5rem', fontSize: '0.8rem', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                                            onClick={() => handleDelete(b._id)}
+                                        >
+                                            Delete
+                                        </button>
+                                    </td>
                                 </tr>
                             ))}
                         </tbody>
