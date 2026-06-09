@@ -148,6 +148,81 @@ img { max-width: 100%; }
 .badge-driver { background: rgba(78, 205, 196, 0.15); color: #4ECDC4; }
 .badge-host { background: rgba(255, 217, 61, 0.15); color: #FFD93D; }
 .badge-admin { background: rgba(255, 107, 107, 0.15); color: #FF6B6B; }
+
+/* =================== RESPONSIVE GRIDS =================== */
+.grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+}
+.grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+@media (max-width: 768px) {
+  .grid-2, .grid-3 {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .btn-lg {
+    width: 100%;
+    padding: 12px 24px;
+    font-size: 0.95rem;
+  }
+  
+  .btn-sm {
+    font-size: 0.75rem;
+    padding: 6px 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  body {
+    font-size: 0.9rem;
+  }
+  
+  .btn {
+    padding: 8px 16px;
+    font-size: 0.8rem;
+    min-height: 40px;
+  }
+  
+  .btn-lg {
+    width: 100%;
+    padding: 10px 20px;
+    font-size: 0.9rem;
+  }
+  
+  .card {
+    padding: 16px;
+  }
+  
+  h1 {
+    font-size: clamp(1.4rem, 5vw, 2.5rem) !important;
+  }
+  
+  h2 {
+    font-size: clamp(1.2rem, 4vw, 1.8rem) !important;
+  }
+  
+  h3 {
+    font-size: clamp(1rem, 3vw, 1.2rem) !important;
+  }
+}
+
+/* =================== MOBILE NAVIGATION FIX =================== */
+@media (max-width: 640px) {
+  nav {
+    padding: 0 clamp(8px, 3vw, 16px) !important;
+  }
+  
+  nav > div:first-child {
+    min-width: 0;
+  }
+}
 .badge-pending { background: rgba(255,217,61,0.15); color: #FFD93D; border: 1px solid rgba(255,217,61,0.3); }
 
 /* =================== STAT CARDS =================== */
