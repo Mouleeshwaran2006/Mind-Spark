@@ -17,6 +17,17 @@ const BookingSchema = new mongoose.Schema(
             ref: 'User',
             required: true,
         },
+        category: {
+            type: String,
+            enum: ['parking', 'hotel', 'pg'],
+            default: 'parking',
+        },
+        quantity: {
+            type: Number,
+            default: 1, // Number of slots / rooms / beds
+            min: 1,
+        },
+        // Dates & Timing
         startTime: {
             type: Date,
             required: true,
@@ -26,13 +37,34 @@ const BookingSchema = new mongoose.Schema(
             type: Date,
             default: null,
         },
+        checkInDate: {
+            type: Date,
+            default: null,
+        },
+        checkOutDate: {
+            type: Date,
+            default: null,
+        },
+        bookingMonths: {
+            type: Number,
+            default: 1,
+        },
         durationHours: {
+            type: Number,
+            default: 0,
+        },
+        // Pricing breakdown
+        unitPrice: {
             type: Number,
             default: 0,
         },
         pricePerHour: {
             type: Number,
-            required: true,
+            default: 0,
+        },
+        depositAmount: {
+            type: Number,
+            default: 0,
         },
         totalCost: {
             type: Number,
@@ -46,10 +78,28 @@ const BookingSchema = new mongoose.Schema(
             type: Number,
             default: 0, // 20% of totalCost
         },
+        // Customer metadata
+        vehicleNumber: {
+            type: String,
+            default: '',
+        },
+        guestCount: {
+            type: Number,
+            default: 1,
+        },
+        specialRequests: {
+            type: String,
+            default: '',
+        },
         status: {
             type: String,
-            enum: ['active', 'payment_pending', 'completed', 'cancelled'],
+            enum: ['active', 'confirmed', 'payment_pending', 'completed', 'cancelled'],
             default: 'active',
+        },
+        paymentMethod: {
+            type: String,
+            enum: ['upi', 'card', 'netbanking', 'demo', 'cash', 'pending'],
+            default: 'pending',
         },
         razorpayOrderId: {
             type: String,

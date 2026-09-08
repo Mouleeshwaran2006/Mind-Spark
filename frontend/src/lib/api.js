@@ -42,27 +42,36 @@ export const authAPI = {
     resetPassword: (data) => api.put('/auth/reset-password', data),
 };
 
-// Spots
+// Listings (Parking / Hotels / PG)
 export const spotsAPI = {
-    getNearby: (lat, lng, radius = 5) => api.get(`/spots/nearby?lat=${lat}&lng=${lng}&radius=${radius}`),
-    getHostSpots: () => api.get('/spots/host'),
+    getNearby: (lat, lng, radius = 10, category = '') => {
+        let url = `/spots/nearby?lat=${lat}&lng=${lng}&radius=${radius}`;
+        if (category) url += `&category=${category}`;
+        return api.get(url);
+    },
+    getHostSpots: (category = '') => api.get(`/spots/host${category ? `?category=${category}` : ''}`),
     getSpot: (id) => api.get(`/spots/${id}`),
     createSpot: (data) => api.post('/spots', data),
     updateSpot: (id, data) => api.put(`/spots/${id}`, data),
     deleteSpot: (id) => api.delete(`/spots/${id}`),
-    getAllSpots: () => api.get('/spots'),
+    getAllSpots: (params = {}) => {
+        const query = new URLSearchParams(params).toString();
+        return api.get(`/spots${query ? `?${query}` : ''}`);
+    },
     reserve: (id) => api.post(`/spots/${id}/reserve`),
+    reverseGeocode: (lat, lng) => api.get(`/spots/reverse-geocode?lat=${lat}&lng=${lng}`),
 };
 
 // Bookings
 export const bookingsAPI = {
-    create: (spotId) => api.post('/bookings', { spotId }),
+    create: (bookingData) => api.post('/bookings', typeof bookingData === 'string' ? { spotId: bookingData } : bookingData),
     getDriverBookings: () => api.get('/bookings/driver'),
     getActive: () => api.get('/bookings/active'),
     getHostBookings: () => api.get('/bookings/host'),
     complete: (id) => api.put(`/bookings/${id}/complete`),
     verifyPayment: (id, data) => api.post(`/bookings/${id}/verify-payment`, data),
-    demoComplete: (id) => api.put(`/bookings/${id}/demo-complete`),
+    demoComplete: (id, data = {}) => api.put(`/bookings/${id}/demo-complete`, data),
+    cancel: (id) => api.put(`/bookings/${id}/cancel`),
 };
 
 // Admin

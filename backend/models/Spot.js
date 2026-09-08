@@ -9,14 +9,20 @@ const SpotSchema = new mongoose.Schema(
         },
         title: {
             type: String,
-            required: [true, 'Spot title is required'],
+            required: [true, 'Title is required'],
             trim: true,
             maxlength: [100, 'Title cannot exceed 100 characters'],
+        },
+        category: {
+            type: String,
+            enum: ['parking', 'hotel', 'pg'],
+            default: 'parking',
+            index: true,
         },
         description: {
             type: String,
             default: '',
-            maxlength: [500, 'Description cannot exceed 500 characters'],
+            maxlength: [1000, 'Description cannot exceed 1000 characters'],
         },
         address: {
             type: String,
@@ -34,14 +40,97 @@ const SpotSchema = new mongoose.Schema(
                 required: true,
             },
         },
+        // Vacancy & Inventory Management
+        totalCapacity: {
+            type: Number,
+            default: 1,
+            min: [1, 'Total capacity must be at least 1'],
+        },
+        availableCount: {
+            type: Number,
+            default: 1,
+            min: [0, 'Available count cannot be negative'],
+        },
+        // Pricing Models
         pricePerHour: {
             type: Number,
-            required: [true, 'Price per hour is required'],
-            min: [1, 'Price must be at least ₹1'],
+            default: 0,
+        },
+        pricePerDay: {
+            type: Number,
+            default: 0,
+        },
+        pricePerNight: {
+            type: Number,
+            default: 0,
+        },
+        pricePerMonth: {
+            type: Number,
+            default: 0,
+        },
+        depositAmount: {
+            type: Number,
+            default: 0,
+        },
+        // Hotel Attributes
+        roomType: {
+            type: String,
+            enum: ['single', 'double', 'deluxe', 'suite', 'standard', 'dormitory'],
+            default: 'standard',
+        },
+        acAvailable: {
+            type: Boolean,
+            default: true,
+        },
+        checkInTime: {
+            type: String,
+            default: '12:00 PM',
+        },
+        checkOutTime: {
+            type: String,
+            default: '11:00 AM',
+        },
+        // PG / Paying Guest Attributes
+        sharingType: {
+            type: String,
+            enum: ['single', 'double', 'triple', '4-sharing', 'four', 'custom'],
+            default: 'double',
+        },
+        foodType: {
+            type: String,
+            enum: ['included', 'veg', 'non-veg', 'both', 'none', 'optional', 'without_food'],
+            default: 'included',
+        },
+        gender: {
+            type: String,
+            enum: ['male', 'female', 'unisex', 'anyone', 'gents', 'ladies', 'boys', 'girls'],
+            default: 'unisex',
+        },
+        noticePeriodDays: {
+            type: Number,
+            default: 30,
+        },
+        rules: {
+            type: mongoose.Schema.Types.Mixed,
+            default: [],
+        },
+        // Parking Specific Attributes
+        vehicleType: {
+            type: String,
+            enum: ['four-wheeler', 'two-wheeler', 'ev', 'all'],
+            default: 'four-wheeler',
+        },
+        isCovered: {
+            type: Boolean,
+            default: false,
+        },
+        hasEVCharging: {
+            type: Boolean,
+            default: false,
         },
         status: {
             type: String,
-            enum: ['available', 'reserved', 'occupied'],
+            enum: ['available', 'reserved', 'occupied', 'full'],
             default: 'available',
         },
         reservedUntil: {
@@ -79,5 +168,6 @@ const SpotSchema = new mongoose.Schema(
 
 // 2dsphere index for geospatial queries
 SpotSchema.index({ location: '2dsphere' });
+SpotSchema.index({ category: 1, status: 1 });
 
 module.exports = mongoose.model('Spot', SpotSchema);

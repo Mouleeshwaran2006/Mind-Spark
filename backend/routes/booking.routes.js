@@ -7,18 +7,20 @@ const {
     completeBooking,
     verifyPayment,
     demoComplete,
+    cancelBooking,
 } = require('../controllers/bookingController');
 const { protect } = require('../middleware/auth');
 const { requireRole } = require('../middleware/roleCheck');
 
 const router = express.Router();
 
-router.post('/', protect, requireRole('driver'), createBooking);
-router.get('/driver', protect, requireRole('driver'), getDriverBookings);
-router.get('/active', protect, requireRole('driver'), getActiveBooking);
+router.post('/', protect, createBooking);
+router.get('/driver', protect, getDriverBookings);
+router.get('/active', protect, getActiveBooking);
 router.get('/host', protect, requireRole('host'), getHostBookings);
-router.put('/:id/complete', protect, requireRole('driver'), completeBooking);
-router.post('/:id/verify-payment', protect, requireRole('driver'), verifyPayment);
-router.put('/:id/demo-complete', protect, requireRole('driver'), demoComplete);
+router.put('/:id/complete', protect, completeBooking);
+router.post('/:id/verify-payment', protect, verifyPayment);
+router.put('/:id/demo-complete', protect, demoComplete);
+router.put('/:id/cancel', protect, cancelBooking);
 
 module.exports = router;
