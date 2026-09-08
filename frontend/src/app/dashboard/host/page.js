@@ -13,6 +13,7 @@ export default function HostDashboard() {
     const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const [createCategory, setCreateCategory] = useState('parking');
     const [deletingId, setDeletingId] = useState(null);
 
     useEffect(() => {
@@ -20,6 +21,11 @@ export default function HostDashboard() {
         if (user?.activeRole !== 'host') { router.push('/dashboard/' + user?.activeRole); return; }
         fetchData();
     }, [isAuthenticated, user]);
+
+    const openCreateModal = (cat) => {
+        setCreateCategory(cat);
+        setShowCreateModal(true);
+    };
 
     const fetchData = async () => {
         setLoading(true);
@@ -59,23 +65,40 @@ export default function HostDashboard() {
         <DashboardLayout>
             {showCreateModal && (
                 <CreateListingModal
+                    initialCategory={createCategory}
                     onClose={() => setShowCreateModal(false)}
                     onCreated={fetchData}
                 />
             )}
 
-            <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
                 <div>
                     <h1 className="page-title">🏠 Host & Property Manager Dashboard</h1>
-                    <p className="page-subtitle">Manage your Parking Spaces, Hotel Rooms, and PG Vacancies</p>
+                    <p className="page-subtitle">Manage and post your Parking Spaces, Hotel Rooms, and PG Vacancies</p>
                 </div>
-                <button
-                    className="btn btn-primary"
-                    onClick={() => setShowCreateModal(true)}
-                    style={{ background: 'linear-gradient(135deg, #10B981, #059669)', display: 'flex', alignItems: 'center', gap: 8 }}
-                >
-                    <span>➕</span> Add New Listing / Vacancy
-                </button>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    <button
+                        className="btn btn-sm"
+                        onClick={() => openCreateModal('parking')}
+                        style={{ background: '#3B82F6', color: '#fff', border: 'none', padding: '8px 14px', borderRadius: 8, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+                    >
+                        <span>🚗</span> + List Parking
+                    </button>
+                    <button
+                        className="btn btn-sm"
+                        onClick={() => openCreateModal('hotel')}
+                        style={{ background: '#8B5CF6', color: '#fff', border: 'none', padding: '8px 14px', borderRadius: 8, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+                    >
+                        <span>🏨</span> + List Hotel Room
+                    </button>
+                    <button
+                        className="btn btn-sm"
+                        onClick={() => openCreateModal('pg')}
+                        style={{ background: '#10B981', color: '#fff', border: 'none', padding: '8px 14px', borderRadius: 8, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+                    >
+                        <span>🏠</span> + List PG Stay
+                    </button>
+                </div>
             </div>
 
             {/* Earnings Stats */}
