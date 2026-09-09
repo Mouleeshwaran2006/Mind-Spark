@@ -1,7 +1,25 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { APIProvider, Map, AdvancedMarker, InfoWindow } from '@vis.gl/react-google-maps';
 import { Car, Building2, Home } from 'lucide-react';
+
+const LeafletMapView = dynamic(() => import('./LeafletMapView'), {
+    ssr: false,
+    loading: () => (
+        <div style={{
+            width: '100%', height: '100%', minHeight: '520px',
+            background: '#0B0D17', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: '#818CF8', flexDirection: 'column', gap: 12
+        }}>
+            <div style={{
+                width: 38, height: 38, border: '3px solid rgba(129,140,248,0.2)',
+                borderTopColor: '#818CF8', borderRadius: '50%', animation: 'spin 1s linear infinite'
+            }} />
+            <span style={{ fontSize: '13px', fontWeight: 600 }}>Loading Interactive Map Canvas...</span>
+        </div>
+    )
+});
 
 const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '';
 
@@ -13,19 +31,21 @@ const CATEGORY_COLORS = {
 
 const DEFAULT_CHENNAI = { lat: 12.9863, lng: 80.2432 };
 
-export default function GoogleMapView({
-    userLocation,
-    spots = [],
-    activeCategory = 'parking',
-    searchRadius = 10,
-    selectedSpot: propSelectedSpot,
-    selectedSpotId,
-    onSpotSelect,
-    onSelectSpot,
-    onBook,
-    onBookNow,
-    onReserve
-}) {
+export default function GoogleMapView(props) {
+    const {
+        userLocation,
+        spots = [],
+        activeCategory = 'parking',
+        searchRadius = 10,
+        selectedSpot: propSelectedSpot,
+        selectedSpotId,
+        onSpotSelect,
+        onSelectSpot,
+        onBook,
+        onBookNow,
+        onReserve
+    } = props;
+
     const safeUserLocation = (userLocation && typeof userLocation.lat === 'number' && typeof userLocation.lng === 'number')
         ? userLocation
         : DEFAULT_CHENNAI;
@@ -87,7 +107,8 @@ export default function GoogleMapView({
         return `₹${spot.pricePerHour || 40}/hr`;
     };
 
-    if (GOOGLE_MAPS_API_KEY) {
+    // If Google Maps API key is configured, use official Google Maps JS API SDK
+    if (GOOGLE_MAPS_API_KEY && GOOGLE_MAPS_API_KEY.trim() !== '') {
         return (
             <div style={{ position: 'relative', width: '100%', height: '100%', minHeight: '520px', borderRadius: '16px', overflow: 'hidden' }}>
                 <APIProvider apiKey={GOOGLE_MAPS_API_KEY}>
@@ -198,34 +219,16 @@ export default function GoogleMapView({
         );
     }
 
-    // Fallback interactive map embed
+    // High-performance interactive multi-spot tile map engine
     return (
-        <div style={{
-            position: 'relative', width: '100%', height: '100%', minHeight: '520px',
-            borderRadius: '16px', overflow: 'hidden', background: '#0F172A',
-            border: '1px solid rgba(255,255,255,0.1)'
-        }}>
-            <iframe
-                title="Interactive Map"
-                width="100%"
-                height="100%"
-                style={{ border: 0, minHeight: '520px' }}
-                loading="lazy"
-                src={`https://www.openstreetmap.org/export/embed.html?bbox=${safeUserLocation.lng - 0.05}%2C${safeUserLocation.lat - 0.05}%2C${safeUserLocation.lng + 0.05}%2C${safeUserLocation.lat + 0.05}&layer=mapnik&marker=${safeUserLocation.lat}%2C${safeUserLocation.lng}`}
-            />
-            <div style={{
-                position: 'absolute', top: 12, left: 12, right: 12,
-                display: 'flex', gap: '8px', overflowX: 'auto', padding: '4px', zIndex: 10
-            }}>
-                <div style={{
-                    background: 'rgba(15,23,42,0.85)', backdropFilter: 'blur(8px)',
-                    color: '#fff', padding: '6px 14px', borderRadius: '20px',
-                    fontSize: '12px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px',
-                    border: '1px solid rgba(255,255,255,0.15)'
-                }}>
-                    <span>📍</span> Center: {safeUserLocation.lat.toFixed(4)}, {safeUserLocation.lng.toFixed(4)} ({searchRadius}km radius)
-                </div>
-            </div>
-        </div>
+        <LeafletMapView
+            userLocation={safeUserLocation}
+            spots={spots}
+            selectedSpot={propSelectedSpot || selectedSpot}
+            onSpotSelect={handleSelect}
+            onSelectSpot={handleSelect}
+            onBook={handleBook}
+            onBookNow={handleBook}
+        />
     );
 }
