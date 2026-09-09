@@ -18,7 +18,7 @@ export default function HostDashboard() {
 
     useEffect(() => {
         if (!isAuthenticated) { router.push('/auth/login'); return; }
-        if (user?.activeRole !== 'host') { router.push('/dashboard/' + user?.activeRole); return; }
+        // Gating removed for unified citizen role
         fetchData();
     }, [isAuthenticated, user]);
 

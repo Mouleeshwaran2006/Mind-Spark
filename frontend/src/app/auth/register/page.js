@@ -56,30 +56,6 @@ function RegisterForm() {
                 <div className="card" style={{ padding: 'clamp(20px, 5vw, 32px)' }}>
                     {error && <div className="alert alert-error">{error}</div>}
 
-                    {/* Role selection */}
-                    <div style={{ marginBottom: 'clamp(16px, 4vw, 24px)' }}>
-                        <p style={{ fontSize: 'clamp(0.7rem, 2vw, 0.8rem)', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 'clamp(6px, 2vw, 10px)' }}>I want to</p>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'clamp(6px, 2vw, 10px)' }}>
-                            {[
-                                { role: 'driver', icon: '🚘', label: 'Find Parking', color: '#6C63FF' },
-                                { role: 'host', icon: '🏠', label: 'Host My Space', color: '#FFD93D' },
-                            ].map(r => (
-                                <button key={r.role} type="button" onClick={() => toggleRole(r.role)} style={{
-                                    padding: 'clamp(10px, 2vw, 12px) clamp(10px, 2vw, 16px)', borderRadius: 'var(--radius)', cursor: 'pointer',
-                                    border: `1.5px solid ${selectedRoles.includes(r.role) ? r.color : 'rgba(108,99,255,0.2)'}`,
-                                    background: selectedRoles.includes(r.role) ? `${r.color}18` : 'var(--dark-4)',
-                                    color: selectedRoles.includes(r.role) ? r.color : 'var(--text-secondary)',
-                                    transition: 'all 0.2s', textAlign: 'center', fontWeight: 600, fontSize: 'clamp(0.75rem, 2vw, 0.88rem)'
-                                }}>
-                                    <div style={{ fontSize: 'clamp(1.2rem, 4vw, 1.4rem)', marginBottom: 4 }}>{r.icon}</div>
-                                    {r.label}
-                                    {selectedRoles.includes(r.role) && <div style={{ fontSize: 'clamp(0.6rem, 1.5vw, 0.7rem)', marginTop: 2 }}>✓ Selected</div>}
-                                </button>
-                            ))}
-                        </div>
-                        <p style={{ fontSize: 'clamp(0.65rem, 1.5vw, 0.75rem)', color: 'var(--text-muted)', marginTop: 'clamp(4px, 1vw, 6px)', textAlign: 'center' }}>You can select both — switch roles anytime from dashboard</p>
-                    </div>
-
                     <form onSubmit={handleSubmit}>
                         <div className="form-group">
                             <label className="form-label">Full Name</label>

@@ -13,7 +13,7 @@ export default function DriverBookingsPage() {
 
     useEffect(() => {
         if (!isAuthenticated) { router.push('/auth/login'); return; }
-        if (user?.activeRole !== 'driver') { router.push('/dashboard/' + user?.activeRole); return; }
+        // Gating removed for unified citizen role
         bookingsAPI.getDriverBookings().then(res => setBookings(res.data.bookings || [])).catch(console.error).finally(() => setLoading(false));
     }, [isAuthenticated, user]);
 

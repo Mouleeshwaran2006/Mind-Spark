@@ -24,11 +24,11 @@ const spotValidation = [
 router.get('/', getAllSpots);
 router.get('/nearby', getNearbySpots);
 router.get('/reverse-geocode', reverseGeocode);
-router.get('/host', protect, requireRole('host'), getHostSpots);
+router.get('/host', protect, getHostSpots);
 router.get('/:id', getSpot);
-router.post('/', protect, requireRole('host'), spotValidation, createSpot);
-router.put('/:id', protect, requireRole('host'), updateSpot);
-router.delete('/:id', protect, requireRole('host'), deleteSpot);
+router.post('/', protect, spotValidation, createSpot);
+router.put('/:id', protect, updateSpot);
+router.delete('/:id', protect, deleteSpot);
 router.post('/:id/reserve', protect, reserveSpot);
 
 module.exports = router;

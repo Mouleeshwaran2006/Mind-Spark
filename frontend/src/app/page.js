@@ -1,31 +1,37 @@
 'use client';
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { spotsAPI } from '@/lib/api';
-import MagicBricksCard from '@/components/MagicBricksCard';
 import GoogleMapView from '@/components/GoogleMapView';
+import MagicBricksCard from '@/components/MagicBricksCard';
 import CreateListingModal from '@/components/CreateListingModal';
 import UnifiedBookingModal from '@/components/UnifiedBookingModal';
+import { 
+    Search, MapPin, Navigation, Menu, X, Plus, User, 
+    Car, Building2, Home, SlidersHorizontal, ChevronLeft, ChevronRight, LogOut, LayoutDashboard 
+} from 'lucide-react';
 
-export default function HomePage() {
+export default function FullscreenMapsPage() {
     const { isAuthenticated, user, logout } = useAuth();
     const router = useRouter();
 
-    // Active Category Switcher: 'parking' | 'hotel' | 'pg' | 'all'
+    // Active Category: 'parking' | 'hotel' | 'pg'
     const [category, setCategory] = useState('parking');
-    const [viewMode, setViewMode] = useState('split'); // 'split' | 'grid' | 'map'
     const [spots, setSpots] = useState([]);
     const [loading, setLoading] = useState(true);
     const [userLocation, setUserLocation] = useState(null);
     const [selectedSpot, setSelectedSpot] = useState(null);
     const [bookingSpot, setBookingSpot] = useState(null);
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const [createInitialCategory, setCreateInitialCategory] = useState('parking');
     const [searchQuery, setSearchQuery] = useState('');
     const [radius, setRadius] = useState('All'); // 'All' | 1 | 2 | 5 | 10 | 25
-    const [sortBy, setSortBy] = useState('featured'); // 'featured' | 'price_low' | 'price_high' | 'vacancies'
-    
+    const [isDrawerOpen, setIsDrawerOpen] = useState(true);
+    const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+    const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+
     // Category-specific filters
     const [genderFilter, setGenderFilter] = useState('all'); // for PG: 'all' | 'gents' | 'ladies' | 'unisex'
     const [sharingFilter, setSharingFilter] = useState('all'); // for PG: 'all' | 'single' | 'double' | 'triple' | 'four'
@@ -34,8 +40,10 @@ export default function HomePage() {
     const [isEVFilter, setIsEVFilter] = useState(false);
     const [isCoveredFilter, setIsCoveredFilter] = useState(false);
 
+    const drawerListRef = useRef(null);
+
     // Get User Geolocation
-    useEffect(() => {
+    const detectLocation = useCallback(() => {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 (pos) => {
@@ -45,12 +53,16 @@ export default function HomePage() {
                     // Fallback to Chennai center (Tidel Park / Anna Salai)
                     setUserLocation({ lat: 12.9863, lng: 80.2432 });
                 },
-                { timeout: 6000 }
+                { timeout: 8000 }
             );
         } else {
             setUserLocation({ lat: 12.9863, lng: 80.2432 });
         }
     }, []);
+
+    useEffect(() => {
+        detectLocation();
+    }, [detectLocation]);
 
     // Fetch Listings
     const fetchSpots = useCallback(async () => {
@@ -111,514 +123,460 @@ export default function HomePage() {
             }
 
             return true;
-        }).sort((a, b) => {
-            if (sortBy === 'price_low') {
-                const priceA = a.category === 'pg' ? (a.pricePerMonth || 0) : a.category === 'hotel' ? (a.pricePerNight || 0) : (a.pricePerHour || 0);
-                const priceB = b.category === 'pg' ? (b.pricePerMonth || 0) : b.category === 'hotel' ? (b.pricePerNight || 0) : (b.pricePerHour || 0);
-                return priceA - priceB;
-            }
-            if (sortBy === 'price_high') {
-                const priceA = a.category === 'pg' ? (a.pricePerMonth || 0) : a.category === 'hotel' ? (a.pricePerNight || 0) : (a.pricePerHour || 0);
-                const priceB = b.category === 'pg' ? (b.pricePerMonth || 0) : b.category === 'hotel' ? (b.pricePerNight || 0) : (b.pricePerHour || 0);
-                return priceB - priceA;
-            }
-            if (sortBy === 'vacancies') {
-                return (b.availableCount || 0) - (a.availableCount || 0);
-            }
-            return 0; // featured default
         });
-    }, [spots, category, searchQuery, genderFilter, sharingFilter, foodFilter, roomTypeFilter, isEVFilter, isCoveredFilter, sortBy]);
+    }, [spots, category, searchQuery, genderFilter, sharingFilter, foodFilter, roomTypeFilter, isEVFilter, isCoveredFilter]);
 
-    const handleBookingClick = (spot) => {
-        setBookingSpot(spot);
+    // Handle spot selection & auto-scroll in drawer
+    const handleSpotSelect = (spot) => {
+        setSelectedSpot(spot);
+        setIsDrawerOpen(true);
+        const cardElem = document.getElementById('card-' + spot._id);
+        if (cardElem) {
+            cardElem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
     };
 
-    const handlePostListingClick = () => {
+    const handleOpenCreateModal = (cat) => {
         if (!isAuthenticated) {
             router.push('/auth/login?redirect=post');
             return;
         }
+        setCreateInitialCategory(cat || category || 'parking');
         setShowCreateModal(true);
     };
 
-    // Category Metadata
-    const categories = [
-        { id: 'parking', icon: '🚗', name: 'Smart Parking', badge: 'Live Slots', subtitle: 'Hourly & Daily Car/Bike Parking' },
-        { id: 'hotel', icon: '🏨', name: 'Hotels & Stays', badge: 'Verified Rooms', subtitle: 'Executive Suites & Deluxe Rooms' },
-        { id: 'pg', icon: '🏠', name: 'PG & Co-Living', badge: 'Monthly Stays', subtitle: 'Gents, Ladies & Unisex PG Rooms' },
+    // Category options
+    const categoryOptions = [
+        { id: 'parking', name: 'Parking', icon: Car, color: '#3B82F6', desc: 'Hourly / Daily' },
+        { id: 'hotel', name: 'Hotel', icon: Building2, color: '#8B5CF6', desc: 'Per Night Stay' },
+        { id: 'pg', name: 'PG Rooms', icon: Home, color: '#10B981', desc: 'Monthly Stays' },
     ];
 
     return (
-        <div style={{ background: '#0B0D17', minHeight: '100vh', color: '#F3F4F6', fontFamily: 'Inter, system-ui, sans-serif' }}>
-            {/* Top Navigation Bar */}
-            <header style={{
-                position: 'sticky', top: 0, zIndex: 100,
-                background: 'rgba(11, 13, 23, 0.92)', backdropFilter: 'blur(16px)',
-                borderBottom: '1px solid rgba(255,255,255,0.08)',
-                padding: '0 24px', height: 68, display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+        <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden', backgroundColor: '#0B0D17', fontFamily: 'Inter, system-ui, sans-serif' }}>
+            
+            {/* FULLSCREEN GOOGLE MAP BACKGROUND */}
+            <div style={{ position: 'absolute', inset: 0, zIndex: 1 }}>
+                <GoogleMapView
+                    spots={filteredSpots}
+                    userLocation={userLocation}
+                    selectedSpot={selectedSpot}
+                    onSpotSelect={handleSpotSelect}
+                    onBook={(s) => setBookingSpot(s)}
+                />
+            </div>
+
+            {/* TOP BAR OVERLAY: FLOATING SEARCH + CATEGORY PILLS (MATCHING USER MOCKUP) */}
+            <div style={{
+                position: 'absolute', top: 16, left: 16, right: 16, zIndex: 50,
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+                pointerEvents: 'none'
             }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                    <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
-                        <div style={{
-                            width: 40, height: 40, borderRadius: 12,
-                            background: 'linear-gradient(135deg, #6C63FF, #4ECDC4)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            fontSize: '1.3rem', boxShadow: '0 4px 14px rgba(108,99,255,0.4)'
-                        }}>
-                            ✨
-                        </div>
-                        <div>
-                            <div style={{ fontSize: '1.2rem', fontWeight: 900, background: 'linear-gradient(135deg, #FFF, #A5B4FC, #4ECDC4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                                Mind Spark
-                            </div>
-                            <div style={{ fontSize: '0.68rem', color: '#9CA3AF', letterSpacing: '0.05em', textTransform: 'uppercase', fontWeight: 600 }}>
-                                Living & Parking Hub
-                            </div>
-                        </div>
-                    </Link>
-
-                    {/* Quick Category Tabs in Header (Desktop) */}
-                    <div style={{ display: 'flex', gap: 6, marginLeft: 20, background: 'rgba(255,255,255,0.04)', padding: '4px 6px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.06)' }} className="hide-mobile">
-                        {categories.map(c => (
-                            <button
-                                key={c.id}
-                                onClick={() => setCategory(c.id)}
-                                style={{
-                                    display: 'flex', alignItems: 'center', gap: 6,
-                                    padding: '6px 14px', borderRadius: 8,
-                                    background: category === c.id ? 'linear-gradient(135deg, #6C63FF, #4F46E5)' : 'transparent',
-                                    color: category === c.id ? '#FFF' : '#9CA3AF',
-                                    border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem',
-                                    transition: 'all 0.2s', boxShadow: category === c.id ? '0 2px 8px rgba(108,99,255,0.3)' : 'none'
-                                }}
-                            >
-                                <span>{c.icon}</span>
-                                <span>{c.name}</span>
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Right Actions */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                {/* Left: Floating Search Bar (Google Maps Style) */}
+                <div style={{
+                    pointerEvents: 'auto',
+                    background: '#1E293B',
+                    color: '#fff',
+                    borderRadius: 24,
+                    padding: '6px 14px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    boxShadow: '0 8px 30px rgba(0,0,0,0.5)',
+                    border: '1px solid rgba(255,255,255,0.15)',
+                    width: 'clamp(280px, 32vw, 420px)'
+                }}>
                     <button
-                        onClick={handlePostListingClick}
+                        onClick={() => setIsDrawerOpen(!isDrawerOpen)}
+                        title={isDrawerOpen ? 'Hide Places Drawer' : 'Show Places Drawer'}
                         style={{
-                            display: 'flex', alignItems: 'center', gap: 8,
-                            background: 'linear-gradient(135deg, #10B981, #059669)',
-                            color: '#FFF', border: 'none', padding: '8px 16px',
-                            borderRadius: 10, fontWeight: 700, fontSize: '0.88rem',
-                            cursor: 'pointer', boxShadow: '0 4px 14px rgba(16,185,129,0.3)',
-                            transition: 'transform 0.15s'
+                            background: 'transparent', border: 'none', color: '#94A3B8',
+                            cursor: 'pointer', display: 'flex', alignItems: 'center', padding: 4
                         }}
                     >
-                        <span>➕</span>
-                        <span>Post Vacancy / Spot</span>
+                        <Menu size={20} />
+                    </button>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1 }}>
+                        <Search size={18} color="#6C63FF" />
+                        <input
+                            type="text"
+                            placeholder="Search Google Maps / Locality (e.g. OMR, Tidel Park)..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            style={{
+                                background: 'transparent', border: 'none', color: '#fff',
+                                outline: 'none', width: '100%', fontSize: '13.5px', fontWeight: 500
+                            }}
+                        />
+                        {searchQuery && (
+                            <button
+                                onClick={() => setSearchQuery('')}
+                                style={{ background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer', fontSize: 13 }}
+                            >
+                                ✕
+                            </button>
+                        )}
+                    </div>
+
+                    <button
+                        onClick={detectLocation}
+                        title="Center on my live location"
+                        style={{
+                            background: 'rgba(108,99,255,0.15)', border: 'none', color: '#818CF8',
+                            cursor: 'pointer', display: 'flex', alignItems: 'center', padding: 6, borderRadius: '50%'
+                        }}
+                    >
+                        <Navigation size={16} />
+                    </button>
+                </div>
+
+                {/* Center: TOP CATEGORY PILLS (Parking | Hotel | PG Rooms) */}
+                <div style={{
+                    pointerEvents: 'auto',
+                    display: 'flex',
+                    gap: 8,
+                    background: 'rgba(19, 22, 39, 0.92)',
+                    padding: '6px 8px',
+                    borderRadius: 30,
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
+                    border: '1.5px solid rgba(255,255,255,0.15)',
+                    backdropFilter: 'blur(12px)'
+                }}>
+                    {categoryOptions.map((cat) => {
+                        const Icon = cat.icon;
+                        const active = category === cat.id;
+                        return (
+                            <button
+                                key={cat.id}
+                                onClick={() => setCategory(cat.id)}
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 8,
+                                    padding: '8px 18px',
+                                    borderRadius: 20,
+                                    border: active ? ('2px solid ' + cat.color) : '1px solid transparent',
+                                    background: active ? ('linear-gradient(135deg, ' + cat.color + 'dd, ' + cat.color + ')') : 'transparent',
+                                    color: active ? '#ffffff' : '#CBD5E1',
+                                    fontWeight: active ? 800 : 600,
+                                    fontSize: '14px',
+                                    cursor: 'pointer',
+                                    boxShadow: active ? ('0 4px 14px ' + cat.color + '66') : 'none',
+                                    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
+                                }}
+                            >
+                                <Icon size={18} />
+                                <span>{cat.name}</span>
+                            </button>
+                        );
+                    })}
+                </div>
+
+                {/* Right: Quick "+ List Space" & Profile Widget */}
+                <div style={{ pointerEvents: 'auto', display: 'flex', alignItems: 'center', gap: 10, position: 'relative' }}>
+                    <button
+                        onClick={() => handleOpenCreateModal(category)}
+                        style={{
+                            display: 'flex', alignItems: 'center', gap: 6,
+                            background: 'linear-gradient(135deg, #10B981, #059669)',
+                            color: '#fff', border: 'none', padding: '9px 16px',
+                            borderRadius: 20, fontWeight: 700, fontSize: '13.5px',
+                            cursor: 'pointer', boxShadow: '0 4px 16px rgba(16,185,129,0.4)',
+                            whiteSpace: 'nowrap'
+                        }}
+                    >
+                        <Plus size={16} />
+                        <span>+ List Space</span>
                     </button>
 
                     {isAuthenticated ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                            <Link
-                                href={'/dashboard/' + (user?.activeRole || 'driver')}
+                        <div style={{ position: 'relative' }}>
+                            <button
+                                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                                 style={{
                                     display: 'flex', alignItems: 'center', gap: 8,
-                                    background: 'rgba(255,255,255,0.08)', color: '#FFF',
-                                    padding: '8px 14px', borderRadius: 10, fontSize: '0.85rem',
-                                    fontWeight: 600, textDecoration: 'none', border: '1px solid rgba(255,255,255,0.1)'
+                                    background: '#1E293B', color: '#fff',
+                                    border: '1px solid rgba(255,255,255,0.15)',
+                                    padding: '6px 12px', borderRadius: 20, cursor: 'pointer',
+                                    boxShadow: '0 4px 16px rgba(0,0,0,0.4)'
                                 }}
                             >
-                                <span>📊</span>
-                                <span>Dashboard</span>
-                            </Link>
-                            <button
-                                onClick={logout}
-                                style={{
-                                    background: 'transparent', color: '#EF4444',
-                                    border: '1px solid rgba(239,68,68,0.3)', padding: '7px 12px',
-                                    borderRadius: 10, fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer'
-                                }}
-                            >
-                                Sign Out
+                                <div style={{
+                                    width: 28, height: 28, borderRadius: '50%',
+                                    background: 'linear-gradient(135deg, #6C63FF, #4ECDC4)',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    fontWeight: 800, fontSize: '12px'
+                                }}>
+                                    {user?.name?.charAt(0).toUpperCase() || 'U'}
+                                </div>
+                                <span style={{ fontSize: '13px', fontWeight: 600 }}>{user?.name?.split(' ')[0]}</span>
                             </button>
+
+                            {/* Dropdown Menu */}
+                            {isUserMenuOpen && (
+                                <div style={{
+                                    position: 'absolute', right: 0, top: 46, width: 220,
+                                    background: '#1E293B', borderRadius: 16, border: '1px solid rgba(255,255,255,0.15)',
+                                    boxShadow: '0 16px 36px rgba(0,0,0,0.6)', padding: 8, zIndex: 100,
+                                    display: 'flex', flexDirection: 'column', gap: 4
+                                }}>
+                                    <div style={{ padding: '8px 12px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                                        <div style={{ fontSize: '13px', fontWeight: 700 }}>{user?.name}</div>
+                                        <div style={{ fontSize: '11px', color: '#94A3B8' }}>{user?.email}</div>
+                                    </div>
+                                    <Link
+                                        href={'/dashboard/' + (user?.activeRole || 'driver')}
+                                        style={{
+                                            display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px',
+                                            borderRadius: 8, color: '#E2E8F0', textDecoration: 'none', fontSize: '13px', fontWeight: 600
+                                        }}
+                                    >
+                                        <LayoutDashboard size={16} color="#818CF8" /> Dashboard
+                                    </Link>
+                                    <Link
+                                        href="/dashboard/driver/bookings"
+                                        style={{
+                                            display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px',
+                                            borderRadius: 8, color: '#E2E8F0', textDecoration: 'none', fontSize: '13px', fontWeight: 600
+                                        }}
+                                    >
+                                        <span>📋</span> My Bookings & Stays
+                                    </Link>
+                                    <Link
+                                        href="/dashboard/host"
+                                        style={{
+                                            display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px',
+                                            borderRadius: 8, color: '#E2E8F0', textDecoration: 'none', fontSize: '13px', fontWeight: 600
+                                        }}
+                                    >
+                                        <span>🏠</span> My Listed Spaces
+                                    </Link>
+                                    <button
+                                        onClick={logout}
+                                        style={{
+                                            display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px',
+                                            borderRadius: 8, color: '#EF4444', background: 'transparent',
+                                            border: 'none', width: '100%', textAlign: 'left', cursor: 'pointer', fontSize: '13px', fontWeight: 600
+                                        }}
+                                    >
+                                        <LogOut size={16} /> Sign Out
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     ) : (
                         <div style={{ display: 'flex', gap: 8 }}>
                             <Link
                                 href="/auth/login"
                                 style={{
-                                    background: 'rgba(255,255,255,0.08)', color: '#FFF',
-                                    padding: '8px 16px', borderRadius: 10, fontSize: '0.88rem',
-                                    fontWeight: 600, textDecoration: 'none', border: '1px solid rgba(255,255,255,0.12)'
+                                    background: '#1E293B', color: '#fff', padding: '8px 16px',
+                                    borderRadius: 20, fontSize: '13px', fontWeight: 600, textDecoration: 'none',
+                                    border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 4px 14px rgba(0,0,0,0.4)'
                                 }}
                             >
-                                Login
-                            </Link>
-                            <Link
-                                href="/auth/register"
-                                style={{
-                                    background: 'linear-gradient(135deg, #6C63FF, #4F46E5)', color: '#FFF',
-                                    padding: '8px 16px', borderRadius: 10, fontSize: '0.88rem',
-                                    fontWeight: 600, textDecoration: 'none', boxShadow: '0 4px 12px rgba(108,99,255,0.3)'
-                                }}
-                            >
-                                Register
+                                Sign In
                             </Link>
                         </div>
                     )}
                 </div>
-            </header>
+            </div>
 
-            {/* Hero / Filter Bar Section */}
-            <section style={{
-                background: 'radial-gradient(ellipse at 50% 0%, rgba(108,99,255,0.18) 0%, rgba(11,13,23,0) 70%)',
-                padding: '36px 24px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)'
+            {/* FLOATING COLLAPSIBLE LEFT SIDEBAR (GOOGLE MAPS PLACES DRAWER) */}
+            <div style={{
+                position: 'absolute', top: 76, bottom: 20, left: 16, zIndex: 40,
+                width: isDrawerOpen ? 'clamp(320px, 34vw, 440px)' : '0px',
+                opacity: isDrawerOpen ? 1 : 0,
+                pointerEvents: isDrawerOpen ? 'auto' : 'none',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                display: 'flex', flexDirection: 'column',
+                background: 'rgba(15, 23, 42, 0.95)',
+                backdropFilter: 'blur(16px)',
+                borderRadius: 24,
+                border: '1px solid rgba(255,255,255,0.15)',
+                boxShadow: '0 20px 50px rgba(0,0,0,0.6)',
+                overflow: 'hidden'
             }}>
-                <div style={{ maxWidth: 1340, margin: '0 auto' }}>
-                    {/* Category Selector Pill Bar */}
-                    <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>
-                        {categories.map(c => {
-                            const active = category === c.id;
-                            return (
-                                <button
-                                    key={c.id}
-                                    onClick={() => setCategory(c.id)}
-                                    style={{
-                                        display: 'flex', alignItems: 'center', gap: 12,
-                                        padding: '12px 24px', borderRadius: 16,
-                                        background: active
-                                            ? 'linear-gradient(135deg, rgba(108,99,255,0.25), rgba(78,205,196,0.15))'
-                                            : 'rgba(255,255,255,0.03)',
-                                        border: active ? '2px solid #6C63FF' : '1px solid rgba(255,255,255,0.08)',
-                                        color: '#FFF', cursor: 'pointer',
-                                        boxShadow: active ? '0 8px 24px rgba(108,99,255,0.3)' : 'none',
-                                        transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                                        transform: active ? 'scale(1.02)' : 'scale(1)'
-                                    }}
-                                >
-                                    <span style={{ fontSize: '1.8rem' }}>{c.icon}</span>
-                                    <div style={{ textAlign: 'left' }}>
-                                        <div style={{ fontWeight: 800, fontSize: '1rem', display: 'flex', alignItems: 'center', gap: 6 }}>
-                                            {c.name}
-                                            {active && <span style={{ fontSize: '0.65rem', background: '#6C63FF', color: '#FFF', padding: '2px 6px', borderRadius: 100 }}>ACTIVE</span>}
-                                        </div>
-                                        <div style={{ fontSize: '0.72rem', color: '#9CA3AF' }}>{c.subtitle}</div>
-                                    </div>
-                                </button>
-                            );
-                        })}
+                {/* Drawer Header */}
+                <div style={{ padding: '16px 18px', borderBottom: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div>
+                            <div style={{ fontSize: '15px', fontWeight: 800, color: '#fff' }}>
+                                {category === 'parking' ? '🚗 Nearby Parking Spaces' : category === 'hotel' ? '🏨 Hotels & Suites' : '🏠 PG & Co-Living Stays'}
+                            </div>
+                            <div style={{ fontSize: '12px', color: '#94A3B8' }}>
+                                {filteredSpots.length} verified listings in this area
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: 6 }}>
+                            <button
+                                onClick={() => setIsFiltersOpen(!isFiltersOpen)}
+                                title="Filter options"
+                                style={{
+                                    background: isFiltersOpen ? '#6C63FF' : 'rgba(255,255,255,0.06)',
+                                    color: '#fff', border: 'none', padding: '6px 10px',
+                                    borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: '12px', fontWeight: 600
+                                }}
+                            >
+                                <SlidersHorizontal size={14} /> Filters
+                            </button>
+                            <button
+                                onClick={() => setIsDrawerOpen(false)}
+                                style={{ background: 'rgba(255,255,255,0.06)', border: 'none', color: '#94A3B8', padding: '6px', borderRadius: 8, cursor: 'pointer' }}
+                            >
+                                <ChevronLeft size={16} />
+                            </button>
+                        </div>
                     </div>
 
-                    {/* Search & Distance Bar */}
-                    <div style={{
-                        background: 'rgba(26, 29, 53, 0.85)',
-                        border: '1px solid rgba(255,255,255,0.12)',
-                        borderRadius: 18, padding: '12px 16px',
-                        display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center',
-                        boxShadow: '0 12px 36px rgba(0,0,0,0.3)'
-                    }}>
-                        {/* Search Input */}
-                        <div style={{ flex: '1 1 280px', display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(0,0,0,0.3)', padding: '8px 14px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.06)' }}>
-                            <span style={{ fontSize: '1.1rem' }}>🔍</span>
-                            <input
-                                type="text"
-                                placeholder="Search by locality, area, city or landmark (e.g. OMR, Tidel Park, Guindy)..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
+                    {/* Radius selector */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, overflowX: 'auto', paddingBottom: 2 }}>
+                        <span style={{ fontSize: '11px', color: '#94A3B8', fontWeight: 600 }}>Radius:</span>
+                        {['All', 1, 2, 5, 10].map(r => (
+                            <button
+                                key={r}
+                                onClick={() => setRadius(r)}
                                 style={{
-                                    background: 'transparent', border: 'none', color: '#FFF',
-                                    outline: 'none', width: '100%', fontSize: '0.92rem'
+                                    padding: '3px 9px', borderRadius: 12, fontSize: '11px', fontWeight: 700,
+                                    background: radius === r ? '#6C63FF' : 'rgba(255,255,255,0.05)',
+                                    color: radius === r ? '#fff' : '#94A3B8',
+                                    border: '1px solid ' + (radius === r ? '#6C63FF' : 'rgba(255,255,255,0.08)'),
+                                    cursor: 'pointer'
                                 }}
-                            />
-                            {searchQuery && (
-                                <button onClick={() => setSearchQuery('')} style={{ background: 'none', border: 'none', color: '#9CA3AF', cursor: 'pointer', fontSize: '1rem' }}>✕</button>
+                            >
+                                {r === 'All' ? 'All' : (r + 'km')}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Expandable Advanced Filters */}
+                    {isFiltersOpen && (
+                        <div style={{ background: 'rgba(0,0,0,0.3)', padding: 10, borderRadius: 12, display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4 }}>
+                            {category === 'pg' && (
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+                                    <select
+                                        value={genderFilter}
+                                        onChange={(e) => setGenderFilter(e.target.value)}
+                                        style={{ background: '#1E293B', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', padding: '4px 8px', borderRadius: 6, fontSize: '11px' }}
+                                    >
+                                        <option value="all">👥 All Genders</option>
+                                        <option value="gents">👦 Gents PG</option>
+                                        <option value="ladies">👧 Ladies PG</option>
+                                        <option value="unisex">👫 Unisex</option>
+                                    </select>
+                                    <select
+                                        value={sharingFilter}
+                                        onChange={(e) => setSharingFilter(e.target.value)}
+                                        style={{ background: '#1E293B', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', padding: '4px 8px', borderRadius: 6, fontSize: '11px' }}
+                                    >
+                                        <option value="all">🛏️ All Sharing</option>
+                                        <option value="single">Single Room</option>
+                                        <option value="double">2-Sharing</option>
+                                        <option value="triple">3-Sharing</option>
+                                    </select>
+                                </div>
+                            )}
+
+                            {category === 'hotel' && (
+                                <select
+                                    value={roomTypeFilter}
+                                    onChange={(e) => setRoomTypeFilter(e.target.value)}
+                                    style={{ background: '#1E293B', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', padding: '4px 8px', borderRadius: 6, fontSize: '11px' }}
+                                >
+                                    <option value="all">🏨 All Room Types</option>
+                                    <option value="standard">Standard Room</option>
+                                    <option value="deluxe">Deluxe Room</option>
+                                    <option value="executive">Executive Suite</option>
+                                </select>
+                            )}
+
+                            {category === 'parking' && (
+                                <div style={{ display: 'flex', gap: 8 }}>
+                                    <button
+                                        onClick={() => setIsEVFilter(!isEVFilter)}
+                                        style={{ background: isEVFilter ? '#10B981' : 'rgba(255,255,255,0.06)', color: isEVFilter ? '#fff' : '#94A3B8', border: 'none', padding: '4px 8px', borderRadius: 6, fontSize: '11px', cursor: 'pointer' }}
+                                    >
+                                        ⚡ EV Charging
+                                    </button>
+                                    <button
+                                        onClick={() => setIsCoveredFilter(!isCoveredFilter)}
+                                        style={{ background: isCoveredFilter ? '#3B82F6' : 'rgba(255,255,255,0.06)', color: isCoveredFilter ? '#fff' : '#94A3B8', border: 'none', padding: '4px 8px', borderRadius: 6, fontSize: '11px', cursor: 'pointer' }}
+                                    >
+                                        🛡️ Covered
+                                    </button>
+                                </div>
                             )}
                         </div>
-
-                        {/* Distance Radius */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(0,0,0,0.25)', padding: '6px 12px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.06)' }}>
-                            <span style={{ fontSize: '0.8rem', color: '#9CA3AF', fontWeight: 600 }}>📍 Radius:</span>
-                            {['All', 1, 2, 5, 10, 25].map(r => (
-                                <button
-                                    key={r}
-                                    onClick={() => setRadius(r)}
-                                    style={{
-                                        padding: '4px 10px', borderRadius: 8, fontSize: '0.78rem', fontWeight: 700,
-                                        background: radius === r ? '#6C63FF' : 'transparent',
-                                        color: radius === r ? '#FFF' : '#9CA3AF',
-                                        border: 'none', cursor: 'pointer', transition: 'all 0.15s'
-                                    }}
-                                >
-                                    {r === 'All' ? 'All' : (r + 'km')}
-                                </button>
-                            ))}
-                        </div>
-
-                        {/* View Switcher */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(0,0,0,0.3)', padding: 4, borderRadius: 12, border: '1px solid rgba(255,255,255,0.06)' }}>
-                            <button
-                                onClick={() => setViewMode('split')}
-                                style={{
-                                    padding: '6px 12px', borderRadius: 8, fontSize: '0.8rem', fontWeight: 600,
-                                    background: viewMode === 'split' ? '#4F46E5' : 'transparent',
-                                    color: viewMode === 'split' ? '#FFF' : '#9CA3AF',
-                                    border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4
-                                }}
-                            >
-                                <span>🗺️+📄</span> Split
-                            </button>
-                            <button
-                                onClick={() => setViewMode('grid')}
-                                style={{
-                                    padding: '6px 12px', borderRadius: 8, fontSize: '0.8rem', fontWeight: 600,
-                                    background: viewMode === 'grid' ? '#4F46E5' : 'transparent',
-                                    color: viewMode === 'grid' ? '#FFF' : '#9CA3AF',
-                                    border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4
-                                }}
-                            >
-                                <span>📋</span> Cards
-                            </button>
-                            <button
-                                onClick={() => setViewMode('map')}
-                                style={{
-                                    padding: '6px 12px', borderRadius: 8, fontSize: '0.8rem', fontWeight: 600,
-                                    background: viewMode === 'map' ? '#4F46E5' : 'transparent',
-                                    color: viewMode === 'map' ? '#FFF' : '#9CA3AF',
-                                    border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4
-                                }}
-                            >
-                                <span>🗺️</span> Map Only
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Secondary Category Filters */}
-                    <div style={{ display: 'flex', gap: 12, marginTop: 14, flexWrap: 'wrap', alignItems: 'center', fontSize: '0.82rem' }}>
-                        <span style={{ color: '#9CA3AF', fontWeight: 600 }}>Filter by:</span>
-
-                        {/* Sort */}
-                        <select
-                            value={sortBy}
-                            onChange={(e) => setSortBy(e.target.value)}
-                            style={{
-                                background: '#1E2238', color: '#FFF', border: '1px solid rgba(255,255,255,0.12)',
-                                padding: '6px 12px', borderRadius: 8, outline: 'none', fontSize: '0.82rem', cursor: 'pointer'
-                            }}
-                        >
-                            <option value="featured">✨ Featured</option>
-                            <option value="price_low">💰 Price: Low to High</option>
-                            <option value="price_high">💎 Price: High to Low</option>
-                            <option value="vacancies">🟢 Most Vacancies</option>
-                        </select>
-
-                        {/* PG Filters */}
-                        {category === 'pg' && (
-                            <>
-                                <select
-                                    value={genderFilter}
-                                    onChange={(e) => setGenderFilter(e.target.value)}
-                                    style={{
-                                        background: '#1E2238', color: '#FFF', border: '1px solid rgba(255,255,255,0.12)',
-                                        padding: '6px 12px', borderRadius: 8, outline: 'none', fontSize: '0.82rem', cursor: 'pointer'
-                                    }}
-                                >
-                                    <option value="all">👥 All Genders</option>
-                                    <option value="gents">👦 Gents PG</option>
-                                    <option value="ladies">👧 Ladies PG</option>
-                                    <option value="unisex">👫 Unisex Co-Living</option>
-                                </select>
-
-                                <select
-                                    value={sharingFilter}
-                                    onChange={(e) => setSharingFilter(e.target.value)}
-                                    style={{
-                                        background: '#1E2238', color: '#FFF', border: '1px solid rgba(255,255,255,0.12)',
-                                        padding: '6px 12px', borderRadius: 8, outline: 'none', fontSize: '0.82rem', cursor: 'pointer'
-                                    }}
-                                >
-                                    <option value="all">🛏️ All Sharing Types</option>
-                                    <option value="single">Single Room (Private)</option>
-                                    <option value="double">2-Sharing Room</option>
-                                    <option value="triple">3-Sharing Room</option>
-                                    <option value="four">4-Sharing Room</option>
-                                </select>
-
-                                <select
-                                    value={foodFilter}
-                                    onChange={(e) => setFoodFilter(e.target.value)}
-                                    style={{
-                                        background: '#1E2238', color: '#FFF', border: '1px solid rgba(255,255,255,0.12)',
-                                        padding: '6px 12px', borderRadius: 8, outline: 'none', fontSize: '0.82rem', cursor: 'pointer'
-                                    }}
-                                >
-                                    <option value="all">🍽️ Food: All</option>
-                                    <option value="veg">Pure Veg Food</option>
-                                    <option value="both">Veg & Non-Veg</option>
-                                    <option value="without_food">Without Food</option>
-                                </select>
-                            </>
-                        )}
-
-                        {/* Hotel Filters */}
-                        {category === 'hotel' && (
-                            <select
-                                value={roomTypeFilter}
-                                onChange={(e) => setRoomTypeFilter(e.target.value)}
-                                style={{
-                                    background: '#1E2238', color: '#FFF', border: '1px solid rgba(255,255,255,0.12)',
-                                    padding: '6px 12px', borderRadius: 8, outline: 'none', fontSize: '0.82rem', cursor: 'pointer'
-                                }}
-                            >
-                                <option value="all">🏨 All Room Types</option>
-                                <option value="standard">Standard Room</option>
-                                <option value="deluxe">Deluxe Room</option>
-                                <option value="executive">Executive Suite</option>
-                                <option value="suite">Presidential Suite</option>
-                            </select>
-                        )}
-
-                        {/* Parking Filters */}
-                        {category === 'parking' && (
-                            <>
-                                <button
-                                    onClick={() => setIsEVFilter(!isEVFilter)}
-                                    style={{
-                                        background: isEVFilter ? '#10B981' : '#1E2238',
-                                        color: isEVFilter ? '#FFF' : '#9CA3AF',
-                                        border: '1px solid rgba(255,255,255,0.12)',
-                                        padding: '6px 12px', borderRadius: 8, cursor: 'pointer', fontWeight: 600
-                                    }}
-                                >
-                                    ⚡ EV Charging Available
-                                </button>
-                                <button
-                                    onClick={() => setIsCoveredFilter(!isCoveredFilter)}
-                                    style={{
-                                        background: isCoveredFilter ? '#3B82F6' : '#1E2238',
-                                        color: isCoveredFilter ? '#FFF' : '#9CA3AF',
-                                        border: '1px solid rgba(255,255,255,0.12)',
-                                        padding: '6px 12px', borderRadius: 8, cursor: 'pointer', fontWeight: 600
-                                    }}
-                                >
-                                    🛡️ Covered Parking
-                                </button>
-                            </>
-                        )}
-
-                        <div style={{ marginLeft: 'auto', color: '#9CA3AF', fontSize: '0.82rem' }}>
-                            Found <strong style={{ color: '#F3F4F6' }}>{filteredSpots.length}</strong> {category === 'parking' ? 'parking spots' : category === 'hotel' ? 'hotel rooms' : 'PG properties'}
-                        </div>
-                    </div>
+                    )}
                 </div>
-            </section>
 
-            {/* Main Content Area */}
-            <main style={{ maxWidth: 1400, margin: '0 auto', padding: '24px' }}>
-                {loading ? (
-                    <div style={{ textAlign: 'center', padding: '80px 20px' }}>
-                        <div style={{
-                            width: 48, height: 48, border: '4px solid rgba(108,99,255,0.2)',
-                            borderTopColor: '#6C63FF', borderRadius: '50%',
-                            animation: 'spin 1s linear infinite', margin: '0 auto 16px'
-                        }} />
-                        <p style={{ color: '#9CA3AF', fontSize: '0.95rem' }}>Loading verified listings & coordinates...</p>
-                    </div>
-                ) : filteredSpots.length === 0 ? (
-                    <div style={{
-                        textAlign: 'center', padding: '60px 20px',
-                        background: 'rgba(255,255,255,0.02)', borderRadius: 20,
-                        border: '1px dashed rgba(255,255,255,0.1)'
-                    }}>
-                        <div style={{ fontSize: '3rem', marginBottom: 12 }}>🔍</div>
-                        <h3 style={{ fontSize: '1.3rem', fontWeight: 700, marginBottom: 8 }}>No listings match your current filters</h3>
-                        <p style={{ color: '#9CA3AF', maxWidth: 450, margin: '0 auto 20px', fontSize: '0.9rem' }}>
-                            Try increasing the search distance, clearing search keywords, or list your own space to earn money!
-                        </p>
-                        <button
-                            onClick={() => { setSearchQuery(''); setRadius('All'); setGenderFilter('all'); setSharingFilter('all'); }}
-                            style={{
-                                background: '#6C63FF', color: '#FFF', border: 'none',
-                                padding: '10px 20px', borderRadius: 10, fontWeight: 700, cursor: 'pointer'
-                            }}
-                        >
-                            Reset All Filters
-                        </button>
-                    </div>
-                ) : (
-                    <>
-                        {/* VIEW 1: Split View (Map + Cards) */}
-                        {viewMode === 'split' && (
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, alignItems: 'start' }}>
-                                {/* Left: MagicBricks Cards List */}
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 20, maxHeight: 'calc(100vh - 220px)', overflowY: 'auto', paddingRight: 8 }}>
-                                    {filteredSpots.map(spot => (
-                                        <div
-                                            key={spot._id}
-                                            onMouseEnter={() => setSelectedSpot(spot)}
-                                            style={{
-                                                transition: 'transform 0.2s',
-                                                border: selectedSpot?._id === spot._id ? '2px solid #6C63FF' : '2px solid transparent',
-                                                borderRadius: 18
-                                            }}
-                                        >
-                                            <MagicBricksCard
-                                                spot={spot}
-                                                onBook={handleBookingClick}
-                                                onSelect={(s) => setSelectedSpot(s)}
-                                            />
-                                        </div>
-                                    ))}
-                                </div>
-
-                                {/* Right: Sticky Google Map */}
-                                <div style={{ position: 'sticky', top: 90, height: 'calc(100vh - 220px)', borderRadius: 20, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.12)', boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }}>
-                                    <GoogleMapView
-                                        spots={filteredSpots}
-                                        userLocation={userLocation}
-                                        selectedSpot={selectedSpot}
-                                        onSpotSelect={(spot) => setSelectedSpot(spot)}
-                                        onBook={handleBookingClick}
-                                    />
-                                </div>
-                            </div>
-                        )}
-
-                        {/* VIEW 2: Grid View (Full MagicBricks Cards) */}
-                        {viewMode === 'grid' && (
-                            <div style={{
-                                display: 'grid',
-                                gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))',
-                                gap: 24
-                            }}>
-                                {filteredSpots.map(spot => (
-                                    <MagicBricksCard
-                                        key={spot._id}
-                                        spot={spot}
-                                        onBook={handleBookingClick}
-                                        onSelect={(s) => setSelectedSpot(s)}
-                                    />
-                                ))}
-                            </div>
-                        )}
-
-                        {/* VIEW 3: Map Only View */}
-                        {viewMode === 'map' && (
-                            <div style={{ height: 'calc(100vh - 240px)', width: '100%', borderRadius: 20, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.12)', boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }}>
-                                <GoogleMapView
-                                    spots={filteredSpots}
-                                    userLocation={userLocation}
-                                    selectedSpot={selectedSpot}
-                                    onSpotSelect={(spot) => setSelectedSpot(spot)}
-                                    onBook={handleBookingClick}
+                {/* Cards List */}
+                <div
+                    ref={drawerListRef}
+                    style={{ flex: 1, overflowY: 'auto', padding: '14px', display: 'flex', flexDirection: 'column', gap: 14 }}
+                >
+                    {loading ? (
+                        <div style={{ textAlign: 'center', padding: '40px 20px', color: '#94A3B8' }}>
+                            <div style={{ width: 32, height: 32, border: '3px solid rgba(108,99,255,0.2)', borderTopColor: '#6C63FF', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 10px' }} />
+                            <p style={{ fontSize: '13px' }}>Locating places on map...</p>
+                        </div>
+                    ) : filteredSpots.length === 0 ? (
+                        <div style={{ textAlign: 'center', padding: '40px 16px', color: '#94A3B8' }}>
+                            <div style={{ fontSize: '2rem', marginBottom: 8 }}>🔍</div>
+                            <div style={{ fontSize: '13.5px', fontWeight: 700, color: '#fff', marginBottom: 4 }}>No places in this view</div>
+                            <p style={{ fontSize: '12px', margin: '0 0 14px' }}>Try increasing radius or list your own space to start earning.</p>
+                            <button
+                                onClick={() => handleOpenCreateModal(category)}
+                                style={{ background: '#10B981', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: 8, fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}
+                            >
+                                + List Your {category.toUpperCase()} Space
+                            </button>
+                        </div>
+                    ) : (
+                        filteredSpots.map(spot => (
+                            <div
+                                key={spot._id}
+                                id={'card-' + spot._id}
+                                onMouseEnter={() => setSelectedSpot(spot)}
+                                style={{
+                                    border: selectedSpot?._id === spot._id ? '2px solid #6C63FF' : '1px solid rgba(255,255,255,0.08)',
+                                    borderRadius: 16, transition: 'all 0.2s', overflow: 'hidden'
+                                }}
+                            >
+                                <MagicBricksCard
+                                    spot={spot}
+                                    onBook={(s) => setBookingSpot(s)}
+                                    onSelect={(s) => setSelectedSpot(s)}
                                 />
                             </div>
-                        )}
-                    </>
-                )}
-            </main>
+                        ))
+                    )}
+                </div>
+            </div>
 
-            {/* Modal 1: Create Listing Modal (with Uber/Ola Draggable Pinpoint) */}
+            {/* FLOATING EXPAND DRAWER BUTTON (WHEN COLLAPSED) */}
+            {!isDrawerOpen && (
+                <button
+                    onClick={() => setIsDrawerOpen(true)}
+                    style={{
+                        position: 'absolute', top: 76, left: 16, zIndex: 40,
+                        background: '#1E293B', color: '#fff', border: '1px solid rgba(255,255,255,0.2)',
+                        padding: '10px 16px', borderRadius: 20, cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', gap: 8, boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+                        fontSize: '13px', fontWeight: 700
+                    }}
+                >
+                    <span>📋 View {filteredSpots.length} Places</span>
+                    <ChevronRight size={16} />
+                </button>
+            )}
+
+            {/* MODAL 1: CREATE LISTING MODAL */}
             {showCreateModal && (
                 <CreateListingModal
+                    isOpen={showCreateModal}
+                    initialCategory={createInitialCategory}
                     onClose={() => setShowCreateModal(false)}
                     onCreated={() => {
                         fetchSpots();
@@ -627,7 +585,7 @@ export default function HomePage() {
                 />
             )}
 
-            {/* Modal 2: Unified Booking Modal (with Razorpay / UPI / Card / Demo checkout) */}
+            {/* MODAL 2: UNIFIED BOOKING MODAL */}
             {bookingSpot && (
                 <UnifiedBookingModal
                     spot={bookingSpot}
@@ -641,9 +599,6 @@ export default function HomePage() {
 
             <style jsx global>{`
                 @keyframes spin { to { transform: rotate(360deg); } }
-                @media (max-width: 900px) {
-                    .hide-mobile { display: none !important; }
-                }
             `}</style>
         </div>
     );

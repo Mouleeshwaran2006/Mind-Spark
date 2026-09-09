@@ -84,7 +84,7 @@ export default function DriverDashboard() {
 
     useEffect(() => {
         if (!isAuthenticated) { router.push('/auth/login'); return; }
-        if (user?.activeRole !== 'driver') { router.push('/dashboard/' + user?.activeRole); return; }
+        // Gating removed for unified citizen role
         checkActiveBooking();
         getLocation();
     }, [isAuthenticated, user, router]);

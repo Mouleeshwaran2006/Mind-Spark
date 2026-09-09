@@ -250,6 +250,12 @@ const createSpot = async (req, res) => {
         const spot = await Spot.create(spotData);
         await spot.populate('host', 'name email phone');
 
+        // Ensure user has host capability in their profile
+        if (req.user && Array.isArray(req.user.roles) && !req.user.roles.includes('host')) {
+            req.user.roles.push('host');
+            await req.user.save().catch(() => {});
+        }
+
         res.status(201).json({ success: true, message: `${category.toUpperCase()} listing created successfully!`, spot });
     } catch (error) {
         console.error('Create listing error:', error);

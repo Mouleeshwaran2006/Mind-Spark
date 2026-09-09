@@ -20,17 +20,18 @@ const register = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Email already registered.' });
         }
 
-        // Determine roles
-        const userRoles = roles && Array.isArray(roles) ? roles : ['driver'];
-        const validRoles = userRoles.filter((r) => ['driver', 'host'].includes(r));
-        if (validRoles.length === 0) validRoles.push('driver');
+        // Determine roles - all normal users get full unified access
+        const userRoles = roles && Array.isArray(roles) && roles.length > 0 ? roles : ['driver', 'host'];
+        const validRoles = userRoles.filter((r) => ['driver', 'host', 'admin'].includes(r));
+        if (!validRoles.includes('driver')) validRoles.push('driver');
+        if (!validRoles.includes('host')) validRoles.push('host');
 
         // Admin assignment by email
         if (email === 'admin@mindspark.com') {
-            validRoles.push('admin');
+            if (!validRoles.includes('admin')) validRoles.push('admin');
         }
 
-        const activeRole = validRoles.includes('admin') ? 'admin' : validRoles[0];
+        const activeRole = validRoles.includes('admin') ? 'admin' : 'driver';
 
         const user = await User.create({
             name,
