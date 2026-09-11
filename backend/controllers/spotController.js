@@ -33,7 +33,14 @@ const reverseGeocodeCoords = async (lat, lng) => {
         });
         const data = await response.json();
         if (data && data.display_name) {
-            return data.display_name;
+            const addr = data.address || {};
+            const locality = addr.neighbourhood || addr.suburb || addr.residential || addr.quarter || 'Chennai';
+            const city = addr.city || addr.town || addr.municipality || addr.state_district || 'Chennai';
+            return {
+                address: data.display_name,
+                locality,
+                city
+            };
         }
         return null;
     } catch (err) {
@@ -51,12 +58,16 @@ const reverseGeocode = async (req, res) => {
         if (!lat || !lng) {
             return res.status(400).json({ success: false, message: 'lat and lng parameters are required.' });
         }
-        const address = await reverseGeocodeCoords(parseFloat(lat), parseFloat(lng));
+        const latitude = parseFloat(lat);
+        const longitude = parseFloat(lng);
+        const geoResult = await reverseGeocodeCoords(latitude, longitude);
         res.json({
             success: true,
-            address: address || `Location (${parseFloat(lat).toFixed(5)}, ${parseFloat(lng).toFixed(5)})`,
-            lat: parseFloat(lat),
-            lng: parseFloat(lng)
+            address: geoResult?.address || `Pinned Location (${latitude.toFixed(5)}, ${longitude.toFixed(5)})`,
+            locality: geoResult?.locality || 'Chennai',
+            city: geoResult?.city || 'Chennai',
+            lat: latitude,
+            lng: longitude
         });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Failed to reverse geocode location.' });
@@ -389,73 +400,6 @@ const reserveSpot = async (req, res) => {
     } catch (error) {
         console.error('Reserve spot error:', error);
         res.status(500).json({ success: false, message: 'Server error reserving listing.' });
-    }
-};
-
-// @desc    Reverse geocode coordinates into address, locality, city
-// @route   GET /api/spots/reverse-geocode?lat=12.9863&lng=80.2432
-// @access  Public
-const reverseGeocode = async (req, res) => {
-    try {
-        const { lat, lng } = req.query;
-        if (!lat || !lng) {
-            return res.status(400).json({ success: false, message: 'Latitude and longitude are required.' });
-        }
-
-        const latitude = parseFloat(lat);
-        const longitude = parseFloat(lng);
-
-        if (isNaN(latitude) || isNaN(longitude)) {
-            return res.status(400).json({ success: false, message: 'Invalid coordinates provided.' });
-        }
-
-        // Fetch from OpenStreetMap Nominatim reverse geocoder
-        const response = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
-            {
-                headers: {
-                    'User-Agent': 'MindSparkSmartMarketplace/2.0 (contact@mindspark.com)'
-                }
-            }
-        );
-
-        if (!response.ok) {
-            return res.json({
-                success: true,
-                address: `Pinned Location (${latitude.toFixed(5)}, ${longitude.toFixed(5)})`,
-                locality: 'Chennai',
-                city: 'Chennai',
-                lat: latitude,
-                lng: longitude
-            });
-        }
-
-        const data = await response.json();
-        const addr = data.address || {};
-
-        const road = addr.road || addr.street || addr.pedestrian || addr.suburb || '';
-        const locality = addr.neighbourhood || addr.suburb || addr.residential || addr.quarter || 'Chennai';
-        const city = addr.city || addr.town || addr.municipality || addr.state_district || 'Chennai';
-        const displayName = data.display_name || `${road ? road + ', ' : ''}${locality}, ${city}`;
-
-        res.json({
-            success: true,
-            address: displayName,
-            locality,
-            city,
-            lat: latitude,
-            lng: longitude
-        });
-    } catch (error) {
-        console.error('Reverse geocode error:', error);
-        res.json({
-            success: true,
-            address: `Pinned Location (${parseFloat(req.query.lat).toFixed(5)}, ${parseFloat(req.query.lng).toFixed(5)})`,
-            locality: 'Chennai',
-            city: 'Chennai',
-            lat: parseFloat(req.query.lat) || 12.9863,
-            lng: parseFloat(req.query.lng) || 80.2432
-        });
     }
 };
 
