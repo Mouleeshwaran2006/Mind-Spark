@@ -70,7 +70,12 @@ export default function CreateListingModal({ isOpen = true, initialCategory = 'p
     };
 
     const handleLocationSelected = (locData) => {
-        setCoords({ lat: locData.lat, lng: locData.lng });
+        if (!locData) return;
+        const lat = locData.lat !== undefined ? locData.lat : locData.coords?.lat;
+        const lng = locData.lng !== undefined ? locData.lng : locData.coords?.lng;
+        if (lat !== undefined && lng !== undefined) {
+            setCoords({ lat: parseFloat(lat), lng: parseFloat(lng) });
+        }
         if (locData.address) setAddress(locData.address);
         if (locData.locality) setLocality(locData.locality);
         if (locData.city) setCity(locData.city);
@@ -603,7 +608,9 @@ export default function CreateListingModal({ isOpen = true, initialCategory = 'p
                 isOpen={isPinModalOpen}
                 onClose={() => setIsPinModalOpen(false)}
                 onLocationSelected={handleLocationSelected}
+                onSelectLocation={handleLocationSelected}
                 initialCoords={coords}
+                initialAddress={address}
             />
         </div>
     );
