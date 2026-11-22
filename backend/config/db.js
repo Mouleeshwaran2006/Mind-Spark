@@ -1,5 +1,9 @@
 const mongoose = require('mongoose');
 
+let lastDbError = null;
+
+const getLastError = () => lastDbError;
+
 const seedDefaultAdmin = async () => {
     try {
         const User = require('../models/User');
@@ -25,8 +29,8 @@ const connectDB = async () => {
     const uri = process.env.MONGO_URI;
 
     if (!uri) {
-        console.warn('⚠️ WARNING: MONGO_URI environment variable is not defined!');
-        console.warn('⚠️ Please add your MongoDB Atlas connection string in your Render Environment Variables.');
+        lastDbError = 'MONGO_URI environment variable is missing in Render. Please add it in Render dashboard -> Environment.';
+        console.warn('⚠️ WARNING: ' + lastDbError);
     }
 
     const targetUri = uri || 'mongodb://127.0.0.1:27017/mindspark';
@@ -36,9 +40,11 @@ const connectDB = async () => {
             const conn = await mongoose.connect(targetUri, {
                 serverSelectionTimeoutMS: 5000,
             });
+            lastDbError = null;
             console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
             await seedDefaultAdmin();
         } catch (error) {
+            lastDbError = error.message;
             console.error(`❌ MongoDB connection error on ${targetUri}: ${error.message}`);
             if (retries > 0) {
                 console.log(`🔄 Retrying database connection in ${delay / 1000}s... (${retries} retries left)`);
@@ -53,3 +59,4 @@ const connectDB = async () => {
 };
 
 module.exports = connectDB;
+module.exports.getLastError = getLastError;

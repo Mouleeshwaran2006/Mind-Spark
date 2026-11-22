@@ -49,12 +49,17 @@ app.get('/api/health', (req, res) => {
     const mongoose = require('mongoose');
     const states = ['disconnected', 'connected', 'connecting', 'disconnecting'];
     const dbState = states[mongoose.connection.readyState] || 'unknown';
+    const rawUri = process.env.MONGO_URI || '';
+    const maskedUri = rawUri ? rawUri.replace(/:([^:@]+)@/, ':****@') : 'NOT SET (defaulting to localhost)';
 
     res.json({
         success: true,
         message: '🚗 Mind Spark API is running!',
         database: dbState,
         dbConnected: dbState === 'connected',
+        mongoUriConfigured: !!process.env.MONGO_URI,
+        mongoUriMasked: maskedUri,
+        lastDbError: connectDB.getLastError ? connectDB.getLastError() : null,
         timestamp: new Date().toISOString(),
     });
 });
