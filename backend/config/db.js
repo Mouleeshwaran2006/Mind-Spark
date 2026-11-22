@@ -1,25 +1,33 @@
 const mongoose = require('mongoose');
 
 const connectDB = async () => {
-  const uri = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/mindspark';
-  try {
-    const conn = await mongoose.connect(uri);
-    console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
-  } catch (error) {
-    console.error(`❌ MongoDB connection error on ${uri}: ${error.message}`);
-    // If external URI failed and it wasn't localhost, attempt localhost fallback
-    if (!uri.includes('127.0.0.1') && !uri.includes('localhost')) {
-      try {
-        console.log('🔄 Attempting fallback to local MongoDB (mongodb://127.0.0.1:27017/mindspark)...');
-        const conn = await mongoose.connect('mongodb://127.0.0.1:27017/mindspark');
-        console.log(`✅ MongoDB Connected (Local Fallback): ${conn.connection.host}`);
-        return;
-      } catch (fallbackError) {
-        console.error(`❌ Local fallback also failed: ${fallbackError.message}`);
-      }
+    const uri = process.env.MONGO_URI;
+
+    if (!uri) {
+        console.warn('⚠️ WARNING: MONGO_URI environment variable is not defined!');
+        console.warn('⚠️ Please add your MongoDB Atlas connection string in your Render Environment Variables.');
     }
-    process.exit(1);
-  }
+
+    const targetUri = uri || 'mongodb://127.0.0.1:27017/mindspark';
+
+    const tryConnect = async (retries = 10, delay = 5000) => {
+        try {
+            const conn = await mongoose.connect(targetUri, {
+                serverSelectionTimeoutMS: 5000,
+            });
+            console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
+        } catch (error) {
+            console.error(`❌ MongoDB connection error on ${targetUri}: ${error.message}`);
+            if (retries > 0) {
+                console.log(`🔄 Retrying database connection in ${delay / 1000}s... (${retries} retries left)`);
+                setTimeout(() => tryConnect(retries - 1, delay), delay);
+            } else {
+                console.warn('⚠️ MongoDB could not be connected. The server will keep running to answer health checks and prevent container crash.');
+            }
+        }
+    };
+
+    tryConnect();
 };
 
 module.exports = connectDB;

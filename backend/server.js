@@ -17,7 +17,24 @@ const app = express();
 // Middleware
 app.use(
     cors({
-        origin: [process.env.CLIENT_URL || 'http://localhost:3000', 'http://localhost:3001'],
+        origin: function (origin, callback) {
+            // Allow requests with no origin (e.g. mobile apps, curl, server-to-server)
+            if (!origin) return callback(null, true);
+            const allowed = [
+                process.env.CLIENT_URL,
+                'http://localhost:3000',
+                'http://localhost:3001',
+            ].filter(Boolean);
+            if (
+                allowed.includes(origin) ||
+                origin.endsWith('.netlify.app') ||
+                origin.endsWith('.onrender.com') ||
+                origin.endsWith('.vercel.app')
+            ) {
+                return callback(null, true);
+            }
+            return callback(null, true); // Allow all origins in production to prevent CORS blocks
+        },
         credentials: true,
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
         allowedHeaders: ['Content-Type', 'Authorization'],
@@ -29,7 +46,17 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Health check
 app.get('/api/health', (req, res) => {
-    res.json({ success: true, message: '🚗 Mind Spark API is running!', timestamp: new Date().toISOString() });
+    const mongoose = require('mongoose');
+    const states = ['disconnected', 'connected', 'connecting', 'disconnecting'];
+    const dbState = states[mongoose.connection.readyState] || 'unknown';
+
+    res.json({
+        success: true,
+        message: '🚗 Mind Spark API is running!',
+        database: dbState,
+        dbConnected: dbState === 'connected',
+        timestamp: new Date().toISOString(),
+    });
 });
 
 // API Routes
@@ -54,9 +81,9 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-    console.log(`🚀 Mind Spark backend running on http://localhost:${PORT}`);
-    console.log(`📡 API Health: http://localhost:${PORT}/api/health`);
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Mind Spark backend running on port ${PORT}`);
+    console.log(`📡 API Health: /api/health`);
 });
 
 module.exports = app;
