@@ -32,7 +32,7 @@ export default function LandingPage() {
                 padding: '0 clamp(12px, 4vw, 40px)', height: 'clamp(52px, 10vh, 64px)', display: 'flex', alignItems: 'center', justifyContent: 'space-between'
             }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(4px, 2vw, 10px)', minWidth: 0 }}>
-                    <span style={{ fontSize: 'clamp(1.1rem, 4vw, 1.5rem)', flexShrink: 0 }}>🚗</span>
+                    <img src="/logo.png" alt="Mind Spark Logo" style={{ width: 'clamp(26px, 5vw, 34px)', height: 'clamp(26px, 5vw, 34px)', objectFit: 'contain', flexShrink: 0 }} />
                     <span style={{ fontSize: 'clamp(0.85rem, 3vw, 1.1rem)', fontWeight: 800, background: 'linear-gradient(135deg, #6C63FF, #4ECDC4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', whiteSpace: 'nowrap' }}>
                         Mind Spark
                     </span>
@@ -171,7 +171,7 @@ export default function LandingPage() {
             {/* Footer */}
             <footer style={{ borderTop: '1px solid var(--card-border)', padding: 'clamp(16px, 4vw, 28px) clamp(16px, 5vw, 40px)', textAlign: 'center', color: 'var(--text-muted)', fontSize: 'clamp(0.75rem, 2vw, 0.85rem)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 8 }}>
-                    <span>🚗</span>
+                    <img src="/logo.png" alt="Mind Spark Logo" style={{ width: 22, height: 22, objectFit: 'contain' }} />
                     <span style={{ fontWeight: 700, color: 'var(--primary-light)' }}>Mind Spark</span>
                 </div>
                 <p>© 2024 Mind Spark Parking. Building the future of urban mobility.</p>

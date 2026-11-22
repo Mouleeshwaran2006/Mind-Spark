@@ -47,7 +47,7 @@ function RegisterForm() {
             <div style={{ width: '100%', maxWidth: 'clamp(280px, 90vw, 460px)' }}>
                 <div style={{ textAlign: 'center', marginBottom: 'clamp(16px, 4vw, 32px)' }}>
                     <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 'clamp(12px, 3vw, 24px)', color: 'var(--primary-light)', fontWeight: 700, fontSize: 'clamp(1rem, 3vw, 1.1rem)' }}>
-                        <span style={{ fontSize: 'clamp(1.3rem, 4vw, 1.5rem)' }}>🚗</span> Mind Spark
+                        <img src="/logo.png" alt="Mind Spark Logo" style={{ width: 'clamp(28px, 6vw, 36px)', height: 'clamp(28px, 6vw, 36px)', objectFit: 'contain' }} /> Mind Spark
                     </Link>
                     <h1 style={{ fontSize: 'clamp(1.4rem, 5vw, 1.8rem)', fontWeight: 800, marginBottom: 'clamp(6px, 2vw, 8px)' }}>Join the platform</h1>
                     <p style={{ color: 'var(--text-secondary)', fontSize: 'clamp(0.8rem, 2vw, 0.9rem)' }}>Create your free account in seconds</p>

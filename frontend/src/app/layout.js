@@ -5,13 +5,25 @@ export const metadata = {
     title: 'Mind Spark – Smart Parking Marketplace',
     description: 'Find, book, and share parking spaces in real-time. Connecting drivers and hosts across your city.',
     keywords: 'parking, smart parking, shared economy, find parking, host parking',
+    icons: {
+        icon: [
+            { url: '/icon.png', sizes: '32x32', type: 'image/png' },
+            { url: '/favicon.ico', sizes: 'any' }
+        ],
+        shortcut: '/favicon.ico',
+        apple: [
+            { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }
+        ],
+    },
 };
 
 export default function RootLayout({ children }) {
     return (
         <html lang="en">
             <head>
-                <link rel="icon" href="/favicon.ico" />
+                <link rel="icon" href="/icon.png" type="image/png" sizes="any" />
+                <link rel="shortcut icon" href="/favicon.ico" />
+                <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
                 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
                 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
                 <meta name="theme-color" content="#0D0E1A" />
