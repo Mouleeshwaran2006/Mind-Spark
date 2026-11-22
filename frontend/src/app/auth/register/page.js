@@ -46,8 +46,8 @@ function RegisterForm() {
         <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'clamp(16px, 5vw, 24px)', background: 'radial-gradient(ellipse at center, rgba(108,99,255,0.08) 0%, transparent 70%)' }}>
             <div style={{ width: '100%', maxWidth: 'clamp(280px, 90vw, 460px)' }}>
                 <div style={{ textAlign: 'center', marginBottom: 'clamp(16px, 4vw, 32px)' }}>
-                    <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 'clamp(12px, 3vw, 24px)', color: 'var(--primary-light)', fontWeight: 700, fontSize: 'clamp(1rem, 3vw, 1.1rem)' }}>
-                        <img src="/logo.png" alt="Mind Spark Logo" style={{ width: 'clamp(28px, 6vw, 36px)', height: 'clamp(28px, 6vw, 36px)', objectFit: 'contain' }} /> Mind Spark
+                    <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 10, marginBottom: 'clamp(12px, 3vw, 24px)', color: 'var(--primary-light)', fontWeight: 700, fontSize: 'clamp(1.05rem, 3vw, 1.2rem)' }}>
+                        <img src="/logo.png" alt="Mind Spark Logo" style={{ width: 'clamp(36px, 8vw, 44px)', height: 'clamp(36px, 8vw, 44px)', borderRadius: '10px', objectFit: 'cover', border: '1.5px solid rgba(108, 99, 255, 0.4)', boxShadow: '0 0 14px rgba(108, 99, 255, 0.4)' }} /> Mind Spark
                     </Link>
                     <h1 style={{ fontSize: 'clamp(1.4rem, 5vw, 1.8rem)', fontWeight: 800, marginBottom: 'clamp(6px, 2vw, 8px)' }}>Join the platform</h1>
                     <p style={{ color: 'var(--text-secondary)', fontSize: 'clamp(0.8rem, 2vw, 0.9rem)' }}>Create your free account in seconds</p>

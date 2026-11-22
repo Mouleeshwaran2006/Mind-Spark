@@ -80,8 +80,8 @@ export default function DashboardLayout({ children }) {
         }}>
             {/* Logo */}
             <div style={{ padding: 'clamp(12px, 3vw, 20px) clamp(16px, 4vw, 24px)', borderBottom: '1px solid var(--card-border)' }}>
-                <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 'clamp(6px, 2vw, 10px)' }}>
-                    <img src="/logo.png" alt="Mind Spark Logo" style={{ width: 'clamp(28px, 5vw, 36px)', height: 'clamp(28px, 5vw, 36px)', objectFit: 'contain', flexShrink: 0 }} />
+                <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 'clamp(8px, 2vw, 12px)' }}>
+                    <img src="/logo.png" alt="Mind Spark Logo" style={{ width: 'clamp(32px, 5vw, 40px)', height: 'clamp(32px, 5vw, 40px)', borderRadius: '10px', objectFit: 'cover', border: '1.5px solid rgba(108, 99, 255, 0.4)', boxShadow: '0 0 12px rgba(108, 99, 255, 0.3)', flexShrink: 0 }} />
                     <div>
                         <div style={{ fontWeight: 800, fontSize: 'clamp(0.85rem, 2vw, 1rem)', color: 'var(--text-primary)' }}>Mind Spark</div>
                         <div style={{ fontSize: 'clamp(0.6rem, 1.5vw, 0.7rem)', color: 'var(--text-muted)' }}>Smart Parking</div>

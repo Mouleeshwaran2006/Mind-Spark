@@ -31,8 +31,8 @@ export default function LandingPage() {
                 borderBottom: '1px solid rgba(108,99,255,0.1)',
                 padding: '0 clamp(12px, 4vw, 40px)', height: 'clamp(52px, 10vh, 64px)', display: 'flex', alignItems: 'center', justifyContent: 'space-between'
             }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(4px, 2vw, 10px)', minWidth: 0 }}>
-                    <img src="/logo.png" alt="Mind Spark Logo" style={{ width: 'clamp(26px, 5vw, 34px)', height: 'clamp(26px, 5vw, 34px)', objectFit: 'contain', flexShrink: 0 }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(8px, 2vw, 12px)', minWidth: 0 }}>
+                    <img src="/logo.png" alt="Mind Spark Logo" style={{ width: 'clamp(32px, 6vw, 40px)', height: 'clamp(32px, 6vw, 40px)', borderRadius: '10px', objectFit: 'cover', border: '1.5px solid rgba(108, 99, 255, 0.4)', boxShadow: '0 0 12px rgba(108, 99, 255, 0.35)', flexShrink: 0 }} />
                     <span style={{ fontSize: 'clamp(0.85rem, 3vw, 1.1rem)', fontWeight: 800, background: 'linear-gradient(135deg, #6C63FF, #4ECDC4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', whiteSpace: 'nowrap' }}>
                         Mind Spark
                     </span>
