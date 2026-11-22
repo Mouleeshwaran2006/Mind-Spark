@@ -75,9 +75,10 @@ UserSchema.methods.comparePassword = async function (candidatePassword) {
 
 // Generate JWT token
 UserSchema.methods.generateToken = function () {
+    const secret = process.env.JWT_SECRET || 'mindspark_default_fallback_secret_key_2024';
     return jwt.sign(
         { id: this._id, email: this.email, activeRole: this.activeRole, roles: this.roles },
-        process.env.JWT_SECRET,
+        secret,
         { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
     );
 };

@@ -1,4 +1,5 @@
 const { validationResult } = require('express-validator');
+const mongoose = require('mongoose');
 const User = require('../models/User');
 const crypto = require('crypto');
 const sendEmail = require('../utils/sendEmail');
@@ -8,6 +9,13 @@ const sendEmail = require('../utils/sendEmail');
 // @access  Public
 const register = async (req, res) => {
     try {
+        if (mongoose.connection.readyState !== 1) {
+            return res.status(503).json({
+                success: false,
+                message: 'Database is currently connecting or unavailable. Please check your MongoDB connection string in Render / .env.'
+            });
+        }
+
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
             return res.status(400).json({ success: false, errors: errors.array() });
@@ -60,7 +68,13 @@ const register = async (req, res) => {
         });
     } catch (error) {
         console.error('Register error:', error);
-        res.status(500).json({ success: false, message: 'Server error during registration.' });
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Server error during registration.',
+            details: (error.name === 'MongooseError' || error.name === 'MongoServerSelectionError')
+                ? 'Database connection timed out. Check your MongoDB Atlas cluster and IP whitelist (0.0.0.0/0).'
+                : undefined
+        });
     }
 };
 
@@ -69,6 +83,13 @@ const register = async (req, res) => {
 // @access  Public
 const login = async (req, res) => {
     try {
+        if (mongoose.connection.readyState !== 1) {
+            return res.status(503).json({
+                success: false,
+                message: 'Database is currently connecting or unavailable. Please check your MongoDB connection string in Render / .env.'
+            });
+        }
+
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
             return res.status(400).json({ success: false, errors: errors.array() });
@@ -108,7 +129,13 @@ const login = async (req, res) => {
         });
     } catch (error) {
         console.error('Login error:', error);
-        res.status(500).json({ success: false, message: 'Server error during login.' });
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Server error during login.',
+            details: (error.name === 'MongooseError' || error.name === 'MongoServerSelectionError')
+                ? 'Database connection timed out. Check your MongoDB Atlas cluster and IP whitelist (0.0.0.0/0).'
+                : undefined
+        });
     }
 };
 

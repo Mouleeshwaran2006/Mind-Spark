@@ -1,5 +1,26 @@
 const mongoose = require('mongoose');
 
+const seedDefaultAdmin = async () => {
+    try {
+        const User = require('../models/User');
+        const adminEmail = 'admin@mindspark.com';
+        const exists = await User.findOne({ email: adminEmail });
+        if (!exists) {
+            console.log('🌱 No admin user found in database. Auto-seeding default admin...');
+            await User.create({
+                name: 'Administrator',
+                email: adminEmail,
+                password: 'password123',
+                roles: ['admin', 'driver', 'host'],
+                activeRole: 'admin',
+            });
+            console.log('✅ Default admin auto-created: admin@mindspark.com / password123');
+        }
+    } catch (err) {
+        console.warn('⚠️ Admin auto-seed note:', err.message);
+    }
+};
+
 const connectDB = async () => {
     const uri = process.env.MONGO_URI;
 
@@ -16,6 +37,7 @@ const connectDB = async () => {
                 serverSelectionTimeoutMS: 5000,
             });
             console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
+            await seedDefaultAdmin();
         } catch (error) {
             console.error(`❌ MongoDB connection error on ${targetUri}: ${error.message}`);
             if (retries > 0) {
