@@ -179,7 +179,7 @@ const deleteBooking = async (req, res) => {
 const updateSpotStatus = async (req, res) => {
     try {
         const { status } = req.body;
-        if (!['available', 'occupied'].includes(status)) {
+        if (!['available', 'occupied', 'reserved'].includes(status)) {
             return res.status(400).json({ success: false, message: 'Invalid status' });
         }
 
@@ -187,6 +187,10 @@ const updateSpotStatus = async (req, res) => {
         if (!spot) return res.status(404).json({ success: false, message: 'Spot not found' });
 
         spot.status = status;
+        if (status === 'available') {
+            spot.reservedBy = null;
+            spot.reservedUntil = null;
+        }
         await spot.save();
 
         res.json({ success: true, message: `Spot marked as ${status}`, spot });

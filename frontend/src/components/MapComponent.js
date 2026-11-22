@@ -83,7 +83,7 @@ export default function MapComponent({ userLocation, spots, searchRadius = 5, on
                 )}
 
                 {/* Spot markers */}
-                {spots.map(spot => (
+                {spots.filter(spot => spot && spot.location?.coordinates && spot.location.coordinates.length === 2 && !isNaN(spot.location.coordinates[0]) && !isNaN(spot.location.coordinates[1])).map(spot => (
                     <Marker
                         key={spot._id}
                         position={[spot.location.coordinates[1], spot.location.coordinates[0]]}

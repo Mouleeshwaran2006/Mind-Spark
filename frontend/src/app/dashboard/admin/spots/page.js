@@ -66,9 +66,10 @@ export default function AdminSpotsPage() {
                                             value={s.status}
                                             onChange={(e) => handleStatusChange(s._id, e.target.value)}
                                             className={`badge badge-${s.status}`}
-                                            style={{ backgroundColor: s.status === 'available' ? 'rgba(46, 213, 115, 0.15)' : 'rgba(255, 71, 87, 0.15)', color: s.status === 'available' ? '#2ed573' : '#ff4757', border: '1px solid currentColor', borderRadius: '20px', padding: '0.4rem 0.8rem', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', outline: 'none' }}
+                                            style={{ backgroundColor: s.status === 'available' ? 'rgba(46, 213, 115, 0.15)' : s.status === 'reserved' ? 'rgba(255, 159, 67, 0.15)' : 'rgba(255, 71, 87, 0.15)', color: s.status === 'available' ? '#2ed573' : s.status === 'reserved' ? '#ff9f43' : '#ff4757', border: '1px solid currentColor', borderRadius: '20px', padding: '0.4rem 0.8rem', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', outline: 'none' }}
                                         >
                                             <option value="available" style={{ color: '#000' }}>● Available</option>
+                                            <option value="reserved" style={{ color: '#000' }}>● Reserved</option>
                                             <option value="occupied" style={{ color: '#000' }}>● Occupied</option>
                                         </select>
                                     </td>

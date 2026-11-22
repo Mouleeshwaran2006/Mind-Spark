@@ -90,7 +90,7 @@ const getDriverBookings = async (req, res) => {
 // @access  Private (driver)
 const getActiveBooking = async (req, res) => {
     try {
-        const booking = await Booking.findOne({ driver: req.user._id, status: 'active' })
+        const booking = await Booking.findOne({ driver: req.user._id, status: { $in: ['active', 'payment_pending'] } })
             .populate('spot', 'title address pricePerHour location')
             .populate('host', 'name');
         res.json({ success: true, booking: booking || null });
@@ -130,6 +130,22 @@ const completeBooking = async (req, res) => {
         }
 
         if (booking.status !== 'active') {
+            if (booking.status === 'payment_pending') {
+                return res.json({
+                    success: true,
+                    message: 'Session already ended. Proceed to payment.',
+                    booking,
+                    payment: {
+                        amount: booking.totalCost,
+                        currency: 'INR',
+                        razorpayOrderId: booking.razorpayOrderId || null,
+                        razorpayKeyId: process.env.RAZORPAY_KEY_ID,
+                        durationHours: booking.durationHours,
+                        hostEarning: booking.hostEarning,
+                        platformCommission: booking.platformCommission,
+                    },
+                });
+            }
             return res.status(400).json({ success: false, message: 'Booking is not active.' });
         }
 
@@ -201,6 +217,14 @@ const verifyPayment = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Booking not found.' });
         }
 
+        if (booking.status === 'completed') {
+            return res.json({
+                success: true,
+                message: 'Booking already completed.',
+                booking,
+            });
+        }
+
         // Verify signature
         let isValid = false;
         try {
@@ -259,6 +283,10 @@ const demoComplete = async (req, res) => {
         const booking = await Booking.findById(req.params.id);
         if (!booking || booking.driver.toString() !== req.user._id.toString()) {
             return res.status(404).json({ success: false, message: 'Booking not found.' });
+        }
+
+        if (booking.status === 'completed') {
+            return res.json({ success: true, message: 'Demo payment already complete.', booking });
         }
 
         booking.status = 'completed';

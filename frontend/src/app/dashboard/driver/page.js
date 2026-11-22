@@ -20,7 +20,7 @@ const MapComponent = dynamic(() => import('@/components/MapComponent'), {
 function BookingTimer({ booking, onEnd }) {
     const [elapsed, setElapsed] = useState(0);
     const [ending, setEnding] = useState(false);
-    const [showQR, setShowQR] = useState(false);
+    const [showQR, setShowQR] = useState(booking?.status === 'payment_pending');
     const intervalRef = useRef(null);
 
     useEffect(() => {
@@ -36,7 +36,7 @@ function BookingTimer({ booking, onEnd }) {
     const minutes = Math.floor(elapsed / 60) % 60;
     const hours = Math.floor(elapsed / 3600);
     const timeStr = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-    const estimatedCost = ((elapsed / 3600) * (booking?.pricePerHour || 0));
+    const estimatedCost = booking?.totalCost ? booking.totalCost : ((elapsed / 3600) * (booking?.pricePerHour || 0));
 
     const handleEndSession = async () => {
         setEnding(true);

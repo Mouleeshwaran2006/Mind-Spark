@@ -5,14 +5,20 @@ const requireRole = (...roles) => {
             return res.status(401).json({ success: false, message: 'Authentication required.' });
         }
 
-        if (!roles.includes(req.user.activeRole)) {
-            return res.status(403).json({
-                success: false,
-                message: `Access denied. This endpoint requires one of: [${roles.join(', ')}] role. Your active role is: ${req.user.activeRole}`,
-            });
+        // Allow if user's active role matches
+        if (roles.includes(req.user.activeRole)) {
+            return next();
         }
 
-        next();
+        // If the endpoint requires admin, allow if the user has the 'admin' role in their roles array
+        if (roles.includes('admin') && req.user.roles && req.user.roles.includes('admin')) {
+            return next();
+        }
+
+        return res.status(403).json({
+            success: false,
+            message: `Access denied. This endpoint requires one of: [${roles.join(', ')}] role. Your active role is: ${req.user.activeRole}`,
+        });
     };
 };
 
